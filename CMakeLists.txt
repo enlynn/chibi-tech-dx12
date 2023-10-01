@@ -18,11 +18,11 @@ set(PLATFORM_WIN32
 	"code/platform/win32/timer_win32.cpp"
 	"code/platform/win32/logger_win32.cpp"
 	"code/platform/win32/common_win32.cpp"
-)
+ "code/platform/platform_logger.cpp")
 
 set(UTIL
 	"code/util/str8.h" "code/util/str8.cpp"
-)
+ "code/util/bit.h")
 
 # Add source to this project's executable.
 add_executable (chibi-tech 

@@ -1,8 +1,11 @@
 #include "str8.h"
+#include "bit.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <cassert>
+#include <stdarg.h>
+#include <stdio.h>
 
 #define STACK_STR_SIZE 23
 
@@ -146,8 +149,31 @@ mstr8::mstr8(const char* Ptr, u64 Length) : mstr8()
         mData.Heap.Ptr[Length] = 0;
 
         // heap remains set to 0 to mark it as dirty set bottom bit to 1, to mark the heap
-        mFooter.Heap.Capacity |= BIT64(HEAP_STRING_BIT);
+        mFooter.Heap.Capacity |= BitMask(HEAP_STRING_BIT);
     }
+}
+
+mstr8 mstr8::Format(const char* StrFormat, ...)
+{
+    assert(StrFormat);
+
+    mstr8 Result = {};
+
+    va_list Args;
+    va_start(Args, StrFormat);
+
+    va_list Copy;
+    va_copy(Copy, Args);
+    int Length = 1 + vsnprintf(nullptr, 0, StrFormat, Copy);
+    va_end(Copy);
+
+    Result.SetLength(Length);
+
+    vsnprintf(Result.Ptr(), Length, StrFormat, Args);
+
+    va_end(Args);
+
+    return Result;
 }
 
 mstr8::mstr8(const mstr8& Other)
@@ -166,7 +192,7 @@ mstr8::mstr8(const mstr8& Other)
         mData.Heap.Ptr[mData.Heap.Length] = 0;
 
         // heap remains set to 0 to mark it as dirty set bottom bit to 1, to mark the heap
-        mFooter.Heap.Capacity |= BIT64(HEAP_STRING_BIT);
+        mFooter.Heap.Capacity |= BitMask(HEAP_STRING_BIT);
     }
     else
     {
@@ -214,7 +240,7 @@ mstr8::operator=(const mstr8& Other)
         mData.Heap.Ptr[mData.Heap.Length] = 0;
 
         // heap remains set to 0 to mark it as dirty set bottom bit to 1, to mark the heap
-        mFooter.Heap.Capacity |= BIT64(HEAP_STRING_BIT);
+        mFooter.Heap.Capacity |= BitMask(HEAP_STRING_BIT);
     }
     else
     {
@@ -320,15 +346,15 @@ mstr8::ExpandIfNeeded(u64 RequiredCapacity)
 
     // We'll double in size, or if that isn't enough we will just allocate exactly the required number of bytes.
     u64 NewCapacity = (OldCapacity * 2 > RequiredCapacity) ? OldCapacity * 2 : RequiredCapacity;
-    mFooter.Heap.Capacity = ForwardAlign(NewCapacity + 1, 8);
+    NewCapacity = ForwardAlign(NewCapacity + 1, 8);
 
     if (IsHeap())
     { // Already on the heap, just realloc
-        mData.Heap.Ptr = (char*)realloc(mData.Heap.Ptr, mFooter.Heap.Capacity);
+        mData.Heap.Ptr = (char*)realloc(mData.Heap.Ptr, NewCapacity);
     }
     else
     {
-        char* NewPtr = (char*)malloc(mFooter.Heap.Capacity);
+        char* NewPtr = (char*)malloc(NewCapacity);
         memcpy(NewPtr, mData.Stack.Ptr, OldLength);
 
         mData.Heap.Ptr = NewPtr;
@@ -336,7 +362,8 @@ mstr8::ExpandIfNeeded(u64 RequiredCapacity)
     }
 
     // heap remains set to 0 to mark it as dirty set bottom bit to 1, to mark the heap
-    mFooter.Heap.Capacity |= BIT64(HEAP_STRING_BIT);
+    mFooter.Heap.Capacity = NewCapacity;
+    mFooter.Heap.Capacity |= BitMask(HEAP_STRING_BIT);
 }
 
 void 
@@ -369,7 +396,7 @@ mstr8::ShrinkToFit()
         mData.Heap.Ptr[CurrentLength] = 0;
 
         // heap remains set to 0 to mark it as dirty set bottom bit to 1, to mark the heap
-        mFooter.Heap.Capacity |= BIT64(HEAP_STRING_BIT);
+        mFooter.Heap.Capacity |= BitMask(HEAP_STRING_BIT);
     }
 }
 
@@ -387,7 +414,7 @@ mstr8::Capacity() const
     if (IsHeap())
     { // Clear the heap string bit
         Capacity = mFooter.Heap.Capacity;
-        Capacity = BIT64_TOGGLE(Capacity, HEAP_STRING_BIT);
+        Capacity = BitFlip(Capacity, HEAP_STRING_BIT);
     }
     return Capacity;
 }
@@ -395,5 +422,5 @@ mstr8::Capacity() const
 constexpr bool 
 mstr8::IsHeap() const
 {
-    return IS_BIT64_SET(mFooter.Heap.Capacity, HEAP_STRING_BIT);
+    return IsBitSet(mFooter.Heap.Capacity, HEAP_STRING_BIT);
 }

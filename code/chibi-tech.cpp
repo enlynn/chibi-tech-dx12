@@ -1,41 +1,115 @@
 ﻿#include "chibi-tech.h"
 #include "platform/platform.h"
 #include "util/str8.h"
+#include "util/bit.h"
+
+int main()
+{
+	PlatformInit();
+
+	//
+	// Setup the logging system
+	//
+
+	PlatformLogSystemInit();
+
+	log_flags_bitset LogFlags = log_flags_bitset()
+		.Set(log_flags::console)
+		.Set(log_flags::debug_console);
+	PlatformLogSystemSetFlags(LogFlags);
+
+	//
+	// Client Window
+	//
+
+	platform_window ClientWindow = {};
+	ClientWindow.Init("Chibi Tech", 1920, 1080);
+	
+	//
+	// Run the App
+	//
+
+	platform_timer FrameTimer    = {};
+	platform_timer PerFrameTimer = {};
+
+	FrameTimer.Start();
+	while (ClientWindow.IsRunning())
+	{
+		PerFrameTimer.Start();
+
+		platform_pump_message_result PumpResult = ClientWindow.PumpMessages();
+		if (PumpResult.Close || PumpResult.Error)
+		{
+			continue;
+		}
+
+		if (PumpResult.Fullscreen)
+		{
+		}
+
+		if (PumpResult.Resize)
+		{
+		}
+
+		// End of the frame
+		FrameTimer.Update();
+		PerFrameTimer.Update(); 
+
+		// Meet the target frame rate so we don't melt the CPU/GPU
+		f64 TargetRefreshRate = ClientWindow.GetMonitorRefreshRate();
+		f64 WorkSecondsElapsed = PerFrameTimer.GetSecondsElapsed();
+		f64 SecondsElapsedForFrame = WorkSecondsElapsed;
+		if (SecondsElapsedForFrame < TargetRefreshRate)
+		{
+			s64 SleepMS = (s64)(1000.0 * (TargetRefreshRate - SecondsElapsedForFrame));
+			if (SleepMS > 0)
+			{
+				PlatformSleepMainThread((u32)SleepMS);
+			}
+		}
+	}
+
+	ClientWindow.Deinit();
+	PlatformDeinit();
+	PlatformLogSystemDeinit();
+	return 0;
+}
+
 
 fn_internal void
 TestStrings()
 {
 	// Basic default constructor.
 	mstr8 StringA = {};
-	assert(StringA.Length()   == 0);
+	assert(StringA.Length() == 0);
 	assert(StringA.Capacity() == 23);
 	assert(!StringA.IsHeap());
 
 	mstr8 StringB = {};
 	StringB.SetLength(23);
-	assert(StringB.Length()   == 23);
+	assert(StringB.Length() == 23);
 	assert(StringB.Capacity() == 23);
 	assert(!StringB.IsHeap());
 
 	mstr8 StringC = {};
 	StringC.SetLength(24);
-	assert(StringC.Length()   == 24);
+	assert(StringC.Length() == 24);
 	assert(StringC.IsHeap());
-	
+
 	StringC.SetLength(0);
 	StringC.ShrinkToFit();
-	assert(StringC.Length()   == 0);
+	assert(StringC.Length() == 0);
 	assert(StringC.Capacity() == 23);
 	assert(!StringC.IsHeap());
 
 	// Stack strings
 	mstr8 StringStackA = mstr8("123");
-	assert(StringStackA.Length()   == 3);
+	assert(StringStackA.Length() == 3);
 	assert(StringStackA.Capacity() == 23);
 	assert(!StringStackA.IsHeap());
 
 	mstr8 StringStackB = mstr8("abcdefghijklmoooooooooo");
-	assert(StringStackB.Length()   == 23);
+	assert(StringStackB.Length() == 23);
 	assert(StringStackB.Capacity() == 23);
 	assert(!StringStackB.IsHeap());
 
@@ -80,58 +154,4 @@ TestStrings()
 	mstr8 StringAddD = "world";
 	mstr8 StringAddE = StringAddC + " " + StringAddD;
 	assert(strcmp(StringAddE.Ptr(), "hello world") == 0);
-}
-
-int main()
-{
-	PlatformInit();
-
-	TestStrings();
-
-	platform_window ClientWindow = {};
-	ClientWindow.Init("Chibi Tech", 1920, 1080);
-
-	platform_timer FrameTimer    = {};
-	platform_timer PerFrameTimer = {};
-
-	FrameTimer.Start();
-	while (ClientWindow.IsRunning())
-	{
-		PerFrameTimer.Start();
-
-		platform_pump_message_result PumpResult = ClientWindow.PumpMessages();
-		if (PumpResult.Close || PumpResult.Error)
-		{
-			continue;
-		}
-
-		if (PumpResult.Fullscreen)
-		{
-		}
-
-		if (PumpResult.Resize)
-		{
-		}
-
-		// End of the frame
-		FrameTimer.Update();
-		PerFrameTimer.Update(); 
-
-		// Meet the target frame rate so we don't melt the CPU/GPU
-		f64 TargetRefreshRate = ClientWindow.GetMonitorRefreshRate();
-		f64 WorkSecondsElapsed = PerFrameTimer.GetSecondsElapsed();
-		f64 SecondsElapsedForFrame = WorkSecondsElapsed;
-		if (SecondsElapsedForFrame < TargetRefreshRate)
-		{
-			s64 SleepMS = (s64)(1000.0 * (TargetRefreshRate - SecondsElapsedForFrame));
-			if (SleepMS > 0)
-			{
-				PlatformSleepMainThread((u32)SleepMS);
-			}
-		}
-	}
-
-	ClientWindow.Deinit();
-	PlatformDeinit();
-	return 0;
 }

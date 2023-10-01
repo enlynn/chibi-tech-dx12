@@ -26,6 +26,12 @@ public:
     constexpr u64         Length()    const { return mLen;         }
     constexpr const char* Ptr()       const { return mBorrowedPtr; }
 
+    constexpr const char& operator[](u64 Index) const { return Ptr()[Index]; }
+
+    // Legacy iterators
+    constexpr const char* begin() const { return Ptr();            }
+    constexpr const char* end()   const { return Ptr() + Length(); }
+
     // Comparison operators. Comparison with mstr8 is implemented inside of mstr8.
     inline friend bool operator==(istr8 lhs,       istr8 rhs);
     inline friend bool operator==(istr8 lhs,       const char* rhs);
@@ -57,6 +63,8 @@ public:
     // Construction from istr8 has to be explicit since it might allocate.
     explicit mstr8(istr8 IStr) : mstr8(IStr.Ptr(), IStr.Length()) {}
 
+    static mstr8 Format(const char* StrFormat, ...);
+
     // Getters and setters for length and capacity and whatnot.
     constexpr u64  Length() const;
     constexpr u64  Capacity() const;
@@ -75,6 +83,12 @@ public:
 
     constexpr const char& operator[](u64 Index) const { return Ptr()[Index]; }
     constexpr char&       operator[](u64 Index)       { return Ptr()[Index]; }
+
+    // Legacy iterators
+    constexpr char*       begin()       { return Ptr();            }
+    constexpr char*       end()         { return Ptr() + Length(); }
+    constexpr const char* begin() const { return Ptr();            }
+    constexpr const char* end()   const { return Ptr() + Length(); }
 
     // Comparison operators.
     inline friend bool operator==(const mstr8& Lhs, const mstr8& Rhs);

@@ -80,26 +80,12 @@ typedef intptr_t  sptr;
 // I doubt this is the most efficient way of doing things, but it is easy to understand and does not run the risk of an underflow
 #define BackwardAlign(Base, Alignment) (ForwardAlign(((Base) + 1), Alignment) - (Alignment))
 #define DivideAlign(val, align) (((val) + (align) - 1) / (align))
-
-#define BIT32(Bit) 1    << (Bit)
-#define BIT64(Bit) 1ULL << (Bit)
-
-// Sets the bit to 1
-#define BIT32_SET(Number, Bit) ((Number) | (BIT32(Bit)))
-#define BIT64_SET(Number, Bit) ((Number) | (BIT64(Bit)))
-
-// Sets the bit to 0
-#define BIT32_CLEAR(Number, Bit) ((Number) & ~(BIT32(Bit)))
-#define BIT64_CLEAR(Number, Bit) ((Number) & ~(BIT64(Bit)))
-
-// If a bit is 1 then set to 0. If bit is 0 then set to 1.
-#define BIT32_TOGGLE(Number, Bit) ((Number) ^ (BIT32(Bit)))
-#define BIT64_TOGGLE(Number, Bit) ((Number) ^ (BIT64(Bit)))
-
-#define IS_BIT32_SET(Number, Bit) ((bool)(((Number) >> (Bit)) & 1   ))
-#define IS_BIT64_SET(Number, Bit) ((bool)(((Number) >> (Bit)) & 1ULL))
-
-#define BITMASK_CLEAR(Number, Mask) ((Number) &= (~(Mask)))
+// Should handle overflow and +/- numbers
+template<typename T> 
+constexpr T DivideCeil(T Numerator, T Denominator)
+{
+    return (Numerator > 0) ? (1 + ((Numerator - 1) / Denominator)) : (Numerator / Denominator);
+}
 
 #define ArrayCount(array)    (sizeof(array) / sizeof(array[0]))
 #define Clamp(Val, Min, Max) (((Val) < (Min)) ? (Min) : (((Val) > (Max)) ? (Max) : (Val)))
