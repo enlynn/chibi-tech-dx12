@@ -53,49 +53,49 @@ DecodeLength(u64 EncodedLength)
 bool 
 operator==(istr8 Lhs, istr8 Rhs) 
 { 
-	return (Lhs.Length() == Rhs.Length() && memcpy((void*)Lhs.Ptr(), Rhs.Ptr(), Lhs.Length()) == 0); 
+	return (Lhs.Length() == Rhs.Length() && memcmp((void*)Lhs.Ptr(), Rhs.Ptr(), Lhs.Length()) == 0); 
 }
 
 bool 
 operator==(istr8 Lhs, const char* Rhs) 
 { 
-	return (Lhs.Length() == strlen(Rhs) && memcpy((void*)Lhs.Ptr(), Rhs, Lhs.Length()) == 0);
+	return (Lhs.Length() == strlen(Rhs) && memcmp((void*)Lhs.Ptr(), Rhs, Lhs.Length()) == 0);
 }
 
 bool 
 operator==(const char* Lhs, istr8 Rhs) 
 { 
-	return (strlen(Lhs) == Rhs.Length() && memcpy((void*)Lhs, Rhs.Ptr(), Rhs.Length()) == 0);
+	return (strlen(Lhs) == Rhs.Length() && memcmp((void*)Lhs, Rhs.Ptr(), Rhs.Length()) == 0);
 }
 
 bool 
 operator==(const mstr8& Lhs, const mstr8& Rhs) 
 { 
-	return (Lhs.Length() == Rhs.Length() && memcpy((void*)Lhs.Ptr(), Rhs.Ptr(), Lhs.Length()) == 0);
+	return (Lhs.Length() == Rhs.Length() && memcmp((void*)Lhs.Ptr(), Rhs.Ptr(), Lhs.Length()) == 0);
 }
 
 bool 
 operator==(const mstr8& Lhs, istr8 Rhs) 
 { 
-	return (Lhs.Length() == Rhs.Length() && memcpy((void*)Lhs.Ptr(), Rhs.Ptr(), Lhs.Length()) == 0);
+	return (Lhs.Length() == Rhs.Length() && memcmp((void*)Lhs.Ptr(), Rhs.Ptr(), Lhs.Length()) == 0);
 }
 
 bool 
 operator==(const mstr8& Lhs, const char* Rhs) 
 { 
-	return (Lhs.Length() == strlen(Rhs) && memcpy((void*)Lhs.Ptr(), Rhs, Lhs.Length()) == 0);
+	return (Lhs.Length() == strlen(Rhs) && memcmp((void*)Lhs.Ptr(), Rhs, Lhs.Length()) == 0);
 }
 
 bool 
 operator==(istr8 Lhs, const mstr8& Rhs) 
 { 
-	return (Lhs.Length() == Rhs.Length() && memcpy((void*)Lhs.Ptr(), Rhs.Ptr(), Lhs.Length()) == 0);
+	return (Lhs.Length() == Rhs.Length() && memcmp((void*)Lhs.Ptr(), Rhs.Ptr(), Lhs.Length()) == 0);
 }
 
 bool 
 operator==(const char* Lhs, const mstr8& Rhs) 
 { 
-	return (strlen(Lhs) == Rhs.Length() && memcpy((void*)Lhs, Rhs.Ptr(), Rhs.Length()) == 0);
+	return (strlen(Lhs) == Rhs.Length() && memcmp((void*)Lhs, Rhs.Ptr(), Rhs.Length()) == 0);
 }
 
 istr8::istr8(const char* Ptr) : mBorrowedPtr(Ptr), mLen(strlen(Ptr)) {}
