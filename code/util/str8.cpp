@@ -1,4 +1,5 @@
 #include "str8.h"
+#include "str16.h"
 #include "bit.h"
 
 #include <stdlib.h>
@@ -101,8 +102,8 @@ operator==(const char* Lhs, const mstr8& Rhs)
 	return (strlen(Lhs) == Rhs.Length() && memcmp((void*)Lhs, Rhs.Ptr(), Rhs.Length()) == 0);
 }
 
-istr8::istr8(const char* Ptr) : mBorrowedPtr(Ptr), mLen(strlen(Ptr)) {}
-mstr8::mstr8(const char* Ptr) : mstr8(Ptr, strlen(Ptr)) {}
+istr8::istr8(const char* Ptr)    : mBorrowedPtr(Ptr), mLen(strlen(Ptr)) {}
+mstr8::mstr8(const char* Ptr)    : mstr8(Ptr, strlen(Ptr)) {}
 
 mstr8& mstr8::Insert(u64 Index, const char* Str) { return Insert(Index,    Str, (u64)strlen(Str)); }
 mstr8& mstr8::Prepend(const char* Str)           { return Insert((u64)0,   Str, (u64)strlen(Str)); }
@@ -119,17 +120,14 @@ mstr8& mstr8::Append(const char* Str)            { return Insert(Length(), Str, 
 
 mstr8::mstr8()
 {
-    mData.Stack.Ptr[0]       = 0;
+    mData.Heap.Ptr = nullptr;
+    mData.Heap.Length = 0;
     mFooter.Stack.EncodedLen = EncodeLength(0);
 }
 
 mstr8::mstr8(const char* Ptr, u64 Length) : mstr8()
 {
     assert(Ptr);
-
-    // Make sure the embedded fields (if stack string) are zeroed
-    mData.Heap.Length     = 0;
-    mFooter.Heap.Capacity = 0;
 
     if (Length <= STACK_STR_SIZE)
     { // Reserve fits on the stack
@@ -176,7 +174,28 @@ mstr8 mstr8::Format(const char* StrFormat, ...)
     return Result;
 }
 
-mstr8::mstr8(const mstr8& Other)
+mstr8::mstr8(const istr16* Str16) : mstr8()
+{
+    SetLength(Str16->Length());
+
+    const c16* Source = Str16->Ptr();
+    char* Destination = Ptr();
+    u64 DestLength = Length();
+
+    u32 i = 0;
+    int j = 0;
+    while (Source[i])
+    {
+        int consumed;
+        char32_t cp = ToCodePoint(&Source[i], &consumed);
+        i += consumed;
+        if (DestLength < j) break;
+        ToUTF8(cp, &Destination[j], &consumed);
+        j += consumed;
+    }
+}
+
+mstr8::mstr8(const mstr8& Other) : mstr8()
 {
     u64 OtherLength = Other.Length();
 
@@ -202,7 +221,7 @@ mstr8::mstr8(const mstr8& Other)
     }
 }
 
-mstr8::mstr8(mstr8&& Other)
+mstr8::mstr8(mstr8&& Other) : mstr8()
 {
     if (Other.IsHeap())
     {
@@ -226,6 +245,10 @@ mstr8::mstr8(mstr8&& Other)
 mstr8& 
 mstr8::operator=(const mstr8& Other)
 {
+    mData.Heap.Ptr = nullptr;
+    mData.Heap.Length = 0;
+    mFooter.Stack.EncodedLen = EncodeLength(0);
+
     u64 OtherLength = Other.Length();
 
     if (Other.IsHeap())
@@ -255,6 +278,10 @@ mstr8::operator=(const mstr8& Other)
 mstr8& 
 mstr8::operator=(mstr8&& Other)
 {
+    mData.Heap.Ptr = nullptr;
+    mData.Heap.Length = 0;
+    mFooter.Stack.EncodedLen = EncodeLength(0);
+
     if (Other.IsHeap())
     {
         mData.Heap.Ptr        = Other.Ptr();

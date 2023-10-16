@@ -142,6 +142,7 @@ platform_window::Init(const char* Name, u32 Width, u32 Height)
 
 	ShowWindow(Internal->Handle, SW_SHOWNORMAL);
 	mWindowState.IsShown   = true;
+	mInternalState = Internal;
 }
 
 void
@@ -155,7 +156,7 @@ platform_window::Deinit()
 }
 
 platform_window_handle 
-platform_window::GetHandle()
+platform_window::GetHandle() const
 {
 	assert(mInternalState);
 
@@ -164,7 +165,7 @@ platform_window::GetHandle()
 }
 
 platform_window_instance 
-platform_window::GetInstance()
+platform_window::GetInstance() const
 {
 	assert(mInternalState);
 
@@ -173,7 +174,7 @@ platform_window::GetInstance()
 }
 
 platform_window_rect 
-platform_window::GetWindowRect()
+platform_window::GetWindowRect() const
 {
 	assert(mInternalState);
 	win32_window* Win32State = (win32_window*)mInternalState;

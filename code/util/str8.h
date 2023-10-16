@@ -41,7 +41,6 @@ public:
     inline friend bool operator!=(const char* lhs, istr8 rhs)       { return !(lhs == rhs); }
     inline friend bool operator!=(istr8 lhs,       const char* rhs) { return !(lhs == rhs); }
 
-
 private:
 	const char* mBorrowedPtr;
 	u64         mLen;
@@ -59,6 +58,8 @@ public:
     mstr8();
     mstr8(const char* Ptr, u64 Length);
     mstr8(const char* Ptr);
+
+    mstr8(const struct istr16* Str16);
 
     // Construction from istr8 has to be explicit since it might allocate.
     explicit mstr8(istr8 IStr) : mstr8(IStr.Ptr(), IStr.Length()) {}

@@ -12,20 +12,24 @@
 # define PLATFORM_WIN32 0
 #endif
 
+typedef char8_t   c8;
+typedef char16_t  c16;
+typedef char32_t  c32;
+
 typedef int8_t    s8;
 typedef int16_t   s16;
 typedef int32_t   s32;
 typedef int64_t   s64;
 
-typedef uint8_t    b8;
-typedef uint16_t   b16;
-typedef uint32_t   b32;
-typedef uint64_t   b64;
-
 typedef uint8_t   u8;
 typedef uint16_t  u16;
 typedef uint32_t  u32;
 typedef uint64_t  u64;
+
+typedef uint8_t    b8;
+typedef uint16_t   b16;
+typedef uint32_t   b32;
+typedef uint64_t   b64;
 
 typedef float     f32;
 typedef double    f64;
@@ -90,8 +94,8 @@ constexpr T DivideCeil(T Numerator, T Denominator)
 #define ArrayCount(array)    (sizeof(array) / sizeof(array[0]))
 #define Clamp(Val, Min, Max) (((Val) < (Min)) ? (Min) : (((Val) > (Max)) ? (Max) : (Val)))
 
-#define ForRange(Type, VarName, Count)        for (Type VarName = 0; VarName < (Count); ++VarName)
-#define ForRangeReverse(Type, VarName, Count) for (Type VarName = (Count) - 1; VarName >= 0; ++VarName)
+#define ForRange(Type, VarName, Count)        for (Type VarName = 0;           VarName < (Count); ++VarName)
+#define ForRangeReverse(Type, VarName, Count) for (Type VarName = (Count) - 1; VarName >= 0;      --VarName)
 
 // source: https://hbfs.wordpress.com/2008/08/05/branchless-equivalents-of-simple-functions/
 // short for sign extend :p

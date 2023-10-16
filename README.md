@@ -15,3 +15,4 @@ ninja -fbuild.ninja
 // Generate for release and Build
 cmake -S ..\ --preset=x64-release
 ninja -fbuild.ninja
+```

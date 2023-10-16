@@ -61,10 +61,10 @@ public:
 	void                         Init(const char* Name, u32 Width, u32 Height);
 	void                         Deinit();
 
-	platform_window_handle       GetHandle();   //windows=HWND
-	platform_window_instance     GetInstance(); //windows=HINSTANCE
+	platform_window_handle       GetHandle()   const; //windows=HWND
+	platform_window_instance     GetInstance() const; //windows=HINSTANCE
 
-	platform_window_rect         GetWindowRect();
+	platform_window_rect         GetWindowRect() const;
 	// 
 	// TODO(enlynn):
 	// - If I choose to use IMGUI, then it might be a good idea for a user to supply a custom "PumpMessages"

@@ -2,10 +2,14 @@
 #include "platform/platform.h"
 #include "util/str8.h"
 #include "util/bit.h"
+#include "util/allocator.h"
+#include "renderer/simple_renderer.h"
 
 int main()
 {
 	PlatformInit();
+
+	allocator HeapAllocator = allocator::Default();
 
 	//
 	// Setup the logging system
@@ -24,6 +28,17 @@ int main()
 
 	platform_window ClientWindow = {};
 	ClientWindow.Init("Chibi Tech", 1920, 1080);
+
+	//
+	// Renderer
+	//
+
+	simple_renderer_info RenderInfo = {
+		.HeapAllocator = &HeapAllocator,
+		.ClientWindow  = ClientWindow,
+	};
+
+	SimpleRendererInit(RenderInfo);
 	
 	//
 	// Run the App
@@ -51,6 +66,8 @@ int main()
 		{
 		}
 
+		SimpleRendererRender();
+
 		// End of the frame
 		FrameTimer.Update();
 		PerFrameTimer.Update(); 
@@ -69,6 +86,7 @@ int main()
 		}
 	}
 
+	SimpleRendererDeinit();
 	ClientWindow.Deinit();
 	PlatformDeinit();
 	PlatformLogSystemDeinit();

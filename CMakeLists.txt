@@ -18,29 +18,57 @@ set(PLATFORM_WIN32
 	"code/platform/win32/timer_win32.cpp"
 	"code/platform/win32/logger_win32.cpp"
 	"code/platform/win32/common_win32.cpp"
- "code/platform/platform_logger.cpp")
+	"code/platform/platform_logger.cpp"
+)
 
 set(UTIL
-	"code/util/str8.h" "code/util/str8.cpp"
- "code/util/bit.h")
+	"code/util/str8.h"      "code/util/str8.cpp"
+	"code/util/bit.h"
+	"code/util/str16.h"     "code/util/str16.cpp" 
+	"code/util/allocator.h" "code/util/allocator.cpp" 
+	"code/util/array.h")
+
+set(RENDERER
+	"code/renderer/dx12/d3d12_common.h"
+	                                      "code/renderer/dx12/d3d12_export.cpp"
+	"code/renderer/dx12/gfx_device.h"     "code/renderer/dx12/gfx_device.cpp" 
+	"code/renderer/simple_renderer.h"     "code/renderer/simple_renderer.cpp"
+ "code/renderer/dx12/gfx_command_queue.h" "code/renderer/dx12/gfx_command_queue.cpp" "code/renderer/dx12/gfx_command_list.h" "code/util/array.cpp" "code/renderer/dx12/gfx_command_list.cpp" "code/renderer/dx12/gfx_resource.h" "code/renderer/dx12/gfx_resource.cpp" "code/renderer/dx12/gfx_utils.h" "code/renderer/dx12/gfx_utils.cpp")
 
 # Add source to this project's executable.
 add_executable (chibi-tech 
 	"code/chibi-tech.cpp" "code/chibi-tech.h" "code/types.h"
 	${PLATFORM_WIN32}
 	${UTIL}
-)
+	${RENDERER}
+  "code/renderer/dx12/gfx_utils.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET chibi-tech PROPERTY CXX_STANDARD 20)
 endif()
 
-target_include_directories(chibi-tech PRIVATE "code/")
+target_include_directories(chibi-tech PRIVATE "code/" "vendor/" "vendor/agility_sdk/")
 
 target_link_libraries(chibi-tech
         PRIVATE
             Winmm.lib
+			dxgi.lib
+			d3d12.lib 
+			dxguid.lib 
+			d3dcompiler.lib
 )
 
 add_compile_definitions(WIN32_LEAN_AND_MEAN)
 add_compile_definitions(NOMINMAX)
+
+SET(AGILITY_SDK_BIN "${CMAKE_CURRENT_SOURCE_DIR}/vendor/agility_sdk/bin/x64/")
+
+file(
+    COPY
+		"${AGILITY_SDK_BIN}/D3D12Core.dll"
+		"${AGILITY_SDK_BIN}/D3D12Core.pdb"
+		"${AGILITY_SDK_BIN}/d3d12SDKLayers.dll"
+		"${AGILITY_SDK_BIN}/d3d12SDKLayers.pdb"
+    DESTINATION
+        ${chibi-tech_BINARY_DIR}/D3D12
+)
