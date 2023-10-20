@@ -33,7 +33,7 @@ set(RENDERER
 	                                      "code/renderer/dx12/d3d12_export.cpp"
 	"code/renderer/dx12/gfx_device.h"     "code/renderer/dx12/gfx_device.cpp" 
 	"code/renderer/simple_renderer.h"     "code/renderer/simple_renderer.cpp"
- "code/renderer/dx12/gfx_command_queue.h" "code/renderer/dx12/gfx_command_queue.cpp" "code/renderer/dx12/gfx_command_list.h" "code/util/array.cpp" "code/renderer/dx12/gfx_command_list.cpp" "code/renderer/dx12/gfx_resource.h" "code/renderer/dx12/gfx_resource.cpp" "code/renderer/dx12/gfx_utils.h" "code/renderer/dx12/gfx_utils.cpp")
+ "code/renderer/dx12/gfx_command_queue.h" "code/renderer/dx12/gfx_command_queue.cpp" "code/renderer/dx12/gfx_command_list.h" "code/util/array.cpp" "code/renderer/dx12/gfx_command_list.cpp" "code/renderer/dx12/gfx_resource.h" "code/renderer/dx12/gfx_resource.cpp" "code/renderer/dx12/gfx_utils.h" "code/renderer/dx12/gfx_utils.cpp" "code/renderer/dx12/gfx_descriptor_allocator.h" "code/renderer/dx12/gfx_descriptor_allocator.cpp")
 
 # Add source to this project's executable.
 add_executable (chibi-tech 

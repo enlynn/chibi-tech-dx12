@@ -2,6 +2,7 @@
 #include "dx12/gfx_device.h"
 #include "dx12/gfx_command_queue.h"
 #include "dx12/gfx_resource.h"
+#include "dx12/gfx_descriptor_allocator.h"
 
 #include <types.h>
 #include <util/allocator.h>
@@ -27,6 +28,9 @@ var_global           gfx_resource     gBackbuffers[cMaxBackBufferCount]{};
 var_global           u64              gSwapchainFenceValues[cMaxBackBufferCount]{};     // Just declare the max possible buffers since different modes require different sizes
 var_global           u32              gSwapchainWidth     = 0;
 var_global           u32              gSwapchainHeight    = 0;
+
+// Descriptors
+var_global cpu_descriptor_allocator   gCpuDescriptors[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES] = {};
 
 // 
 // Thinking about descriptors:
@@ -144,12 +148,6 @@ var_global           u32              gSwapchainHeight    = 0;
 // - Do Dynamic Descriptors write to the GPU Descriptors?
 // 
 // 
-
-
-fn_internal void 
-PresentSwapchain()
-{
-}
 
 fn_internal void
 CreateSwapchain(const platform_window& ClientWindow)
@@ -285,6 +283,12 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 	gGraphicsQueue = gfx_command_queue(gHeapAllocator, gfx_command_queue_type::graphics, &gDevice);
 
 	CreateSwapchain(RenderInfo.ClientWindow);
+
+	// Create the CPU Descriptor Allocators
+	ForRange(u32, i, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES)
+	{
+		gCpuDescriptors[i].Init(&gDevice, gHeapAllocator, (D3D12_DESCRIPTOR_HEAP_TYPE)i);
+	}
 }
 
 void
@@ -298,6 +302,11 @@ SimpleRendererRender()
 void
 SimpleRendererDeinit()
 {
+	ForRange(u32, i, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES)
+	{
+		gCpuDescriptors[i].Deinit();
+	}
+
 	SwapchainRelease();
 	gGraphicsQueue.Deinit();
 	gDevice.Deinit();

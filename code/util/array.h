@@ -112,7 +112,7 @@ public:
 	}
 
 	void Clear()                                   { Reset(); ShrinkToFit(); } // Clears the array and frees the memory
-	~darray() { Clear(); }
+	~darray() { /* Clear(); */ }
 
 	// TODO: Copy and Move and Clone
 
@@ -237,12 +237,35 @@ public:
 	inline friend bool operator!=(const farray<T>& Lhs, const darray<T>& Rhs) { return !(Lhs == Rhs); }
 	inline friend bool operator!=(const darray<T>& Lhs, const farray<T>& Rhs) { return !(Lhs == Rhs); }
 
+	darray Clone()
+	{
+		darray Result = {};
+
+		Result.mAllocator = mAllocator.Clone();
+		Result.mCount = mCount;
+		Result.mCapacity = mCapacity;
+		Result.mArray = nullptr;
+
+		if (Result.mCapacity > 0)
+		{
+			Result.mArray = Result.mAllocator.AllocArray<T>(Result.mCapacity, allocation_strategy::none);
+			ForRange(u64, i, mCount)
+			{
+				Result.mArray[i] = mArray[i];
+			}
+		}
+
+		return Result;
+	}
+
+	// Array copies will always be a shallow copy. Must explicitlu call clone.
 	darray(const darray& Other)
 		: mAllocator(Other.mAllocator.Clone())
-		, mArray(nullptr)
+		, mArray(Other.mArray)
 		, mCount(Other.mCount)
 		, mCapacity(Other.mCapacity)
 	{
+#if 0
 		if (mCapacity > 0)
 		{
 			mArray = mAllocator.AllocArray<T>(mCapacity, allocation_strategy::none);
@@ -251,6 +274,7 @@ public:
 				mArray[i] = Other.mArray[i];
 			}
 		}
+#endif
 	}
 
 	darray(darray&& Other)
@@ -270,8 +294,9 @@ public:
 		mAllocator = Other.mAllocator.Clone();
 		mCount     = Other.mCount;
 		mCapacity  = Other.mCapacity;
-		mArray     = nullptr;
+		mArray     = Other.mArray; //nullptr;
 
+#if 0
 		if (mCapacity > 0)
 		{
 			mArray = mAllocator.AllocArray<T>(mCapacity, allocation_strategy::none);
@@ -280,6 +305,7 @@ public:
 				mArray[i] = Other.mArray[i];
 			}
 		}
+#endif
 
 		return *this;
 	}
