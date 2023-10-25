@@ -1,9 +1,10 @@
-﻿#include "chibi-tech.h"
-#include "platform/platform.h"
+﻿#include "platform/platform.h"
 #include "util/str8.h"
 #include "util/bit.h"
 #include "util/allocator.h"
 #include "renderer/simple_renderer.h"
+
+#include <string.h>
 
 int main()
 {

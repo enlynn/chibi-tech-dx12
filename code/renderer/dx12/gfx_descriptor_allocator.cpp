@@ -3,11 +3,12 @@
 
 #include <util/allocator.h>
 
-inline D3D12_CPU_DESCRIPTOR_HANDLE 
+D3D12_CPU_DESCRIPTOR_HANDLE 
 cpu_descriptor::GetDescriptorHandle(u32 Offset) const
 {
 	D3D12_CPU_DESCRIPTOR_HANDLE Result = mCpuDescriptor;
 	Result.ptr += (u64)Offset * mDescriptorStride;
+	return Result;
 }
 
 void 
@@ -28,7 +29,7 @@ cpu_descriptor_page::Init(const gfx_device& Device, const allocator& Allocator, 
 
 	mBaseDescriptor   = mHeap->GetCPUDescriptorHandleForHeapStart();
 	mDescriptorStride = DeviceHandle->GetDescriptorHandleIncrementSize(mType);
-	mFreeHandles      = mTotalDescriptors;
+	mFreeHandles      = 0;
 
 	FreeBlock(0, mTotalDescriptors);
 }
@@ -77,7 +78,7 @@ cpu_descriptor_page::Allocate(u32 Count)
 		}
 
 		Descriptor.mDescriptorStride  = mDescriptorStride;
-		Descriptor.mCpuDescriptor.ptr = mBaseDescriptor.ptr + (u64)Count * mDescriptorStride;
+		Descriptor.mCpuDescriptor.ptr = mBaseDescriptor.ptr + (u64)Offset * mDescriptorStride;
 		Descriptor.mNumHandles        = Count;
 		//Descriptor.mPageIndex; <- Assigned by cpu_descriptor_allocator
 
@@ -97,7 +98,8 @@ cpu_descriptor_page::ReleaseDescriptors(cpu_descriptor Descriptors)
 constexpr bool 
 cpu_descriptor_page::HasSpace(u32 Count) const
 {
-	return mFreeHandles + Count <= mTotalDescriptors;
+	s64 Leftover = (s64)mFreeHandles - (s64)Count;
+	return Leftover >= 0;
 }
 
 u64
@@ -211,6 +213,7 @@ cpu_descriptor cpu_descriptor_allocator::Allocate(u32 NumDescriptors)
 			Result = mDescriptorPages[i].Allocate(NumDescriptors);
 			if (!Result.IsNull())
 			{
+				Result.mPageIndex = i;
 				break;
 			}
 		}
@@ -224,8 +227,20 @@ cpu_descriptor cpu_descriptor_allocator::Allocate(u32 NumDescriptors)
 		mDescriptorPages[mDescriptorPageCount].Init(*mDevice, mAllocator, mType, mDescriptorsPerPage);
 		Result = mDescriptorPages[mDescriptorPageCount].Allocate(NumDescriptors);
 
+		Result.mPageIndex = mDescriptorPageCount;
 		mDescriptorPageCount += 1;
 	}
 
 	return Result;
+}
+
+
+void 
+cpu_descriptor_allocator::ReleaseDescriptors(cpu_descriptor Descriptors)
+{
+	if (!Descriptors.IsNull())
+	{
+		assert(Descriptors.mPageIndex < mDescriptorPageCount);
+		mDescriptorPages[Descriptors.mPageIndex].ReleaseDescriptors(Descriptors);
+	}
 }

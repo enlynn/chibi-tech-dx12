@@ -170,6 +170,7 @@ gfx_command_queue::ExecuteCommandLists(farray<gfx_command_list*> CommandLists)
 	farray<ID3D12CommandList*> ToBeSubmitted(mAllocator, CommandLists.Length());
 	ForRange(u64, i, CommandLists.Length())
 	{
+		CommandLists[i]->Close();
 		ToBeSubmitted[i] = CommandLists[i]->AsHandle();
 	}
 

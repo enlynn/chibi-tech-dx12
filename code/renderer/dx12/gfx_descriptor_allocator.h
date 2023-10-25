@@ -17,8 +17,8 @@ struct cpu_descriptor
 	u32                         mDescriptorStride = 0;
 	u8                          mPageIndex        = 0;     
 
-	inline D3D12_CPU_DESCRIPTOR_HANDLE GetDescriptorHandle(u32 Offset = 0) const;
-	inline bool                        IsNull()                            const { return mCpuDescriptor.ptr != 0; }
+	D3D12_CPU_DESCRIPTOR_HANDLE GetDescriptorHandle(u32 Offset = 0) const;
+	inline bool                 IsNull()                            const { return mCpuDescriptor.ptr == 0; }
 
 	// NOTE(enlynn): The old implementation held backpointers to the owning allocator. 
 	// Is that really necessary?
@@ -33,7 +33,7 @@ public:
 	void Deinit();
 
 	cpu_descriptor Allocate(u32 Count = 1);
-	void ReleaseDescriptors(cpu_descriptor CpuDescriptors);
+	void           ReleaseDescriptors(cpu_descriptor CpuDescriptors);
 
 	constexpr bool HasSpace(u32 Count) const;   // Get the total number of available descriptors. This does not mean we have a
 												// contiguous chunk of allocators. 
@@ -81,12 +81,14 @@ public:
 
 	// Allocates a number of contiguous descriptors from a CPU visible heap. Cannot be more than the number 
 	// of descriptors per heap.
-	cpu_descriptor Allocate(u32 NumDescriptors);
+	cpu_descriptor Allocate(u32 NumDescriptors = 1);
+
+	void ReleaseDescriptors(cpu_descriptor Descriptors);
 
 private:
 	gfx_device*                mDevice = nullptr;
 	cpu_descriptor_page        mDescriptorPages[cMaxDesctiptorPages] = {}; // If this fills up, we have a problem.
-	u32                        mDescriptorPageCount                  = 0;  // The index of the next page to grab.
+	u8                         mDescriptorPageCount                  = 0;  // The index of the next page to grab.
 
 	D3D12_DESCRIPTOR_HEAP_TYPE mType                                 = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	u32                        mDescriptorsPerPage                   = 256;

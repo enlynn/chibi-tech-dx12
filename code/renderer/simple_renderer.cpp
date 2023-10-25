@@ -3,6 +3,7 @@
 #include "dx12/gfx_command_queue.h"
 #include "dx12/gfx_resource.h"
 #include "dx12/gfx_descriptor_allocator.h"
+#include "dx12/gfx_swapchain.h"
 
 #include <types.h>
 #include <util/allocator.h>
@@ -12,25 +13,17 @@
 #include "dx12/d3d12_common.h"
 
 var_global allocator  gHeapAllocator = allocator::Default();
+var_global u64        gFrameCount    = 0;
 
 var_global gfx_device        gDevice        = {};
 var_global gfx_command_queue gGraphicsQueue;
-
-// Swapchain State
-var_global constexpr u32              cMaxBackBufferCount = DXGI_MAX_SWAP_CHAIN_BUFFERS;
-var_global constexpr u32              cBackbufferCount    = 2;                          // TODO(enlynn): Determine the correct number of backbuffers
-var_global constexpr DXGI_FORMAT      cSwapchainFormat    = DXGI_FORMAT_R8G8B8A8_UNORM; // TODO(enlynn): HDR?
-var_global constexpr bool             cAllowTearing       = false;                      // TODO(enlynn): How should tearing be supported?
-var_global constexpr bool             cVSyncEnabled       = true;
-var_global           IDXGISwapChain3* gSwapchain          = nullptr;
-var_global           u64              gBackbufferIndex    = 0;
-var_global           gfx_resource     gBackbuffers[cMaxBackBufferCount]{};
-var_global           u64              gSwapchainFenceValues[cMaxBackBufferCount]{};     // Just declare the max possible buffers since different modes require different sizes
-var_global           u32              gSwapchainWidth     = 0;
-var_global           u32              gSwapchainHeight    = 0;
+var_global gfx_swapchain     gSwapchain     = {};
 
 // Descriptors
 var_global cpu_descriptor_allocator   gCpuDescriptors[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES] = {};
+
+
+// Let's create a GPU 
 
 // 
 // Thinking about descriptors:
@@ -149,129 +142,73 @@ var_global cpu_descriptor_allocator   gCpuDescriptors[D3D12_DESCRIPTOR_HEAP_TYPE
 // 
 // 
 
-fn_internal void
-CreateSwapchain(const platform_window& ClientWindow)
+#if 0
+
+struct gfx_global
 {
-	const platform_window_rect   WindowRect   = ClientWindow.GetWindowRect();
-	const platform_window_handle WindowHandle = ClientWindow.GetHandle();
+	allocator                  mHeapAllocator;
 
-	auto DeviceHandle  = gDevice.AsHandle();
-	auto DeviceAdapter = gDevice.AsAdapter();
+	gfx_device                 mDevice;
+	gfx_swapchain              mSwapchain;
 
-	IDXGIFactory5* DeviceFactory = nullptr;
-	AssertHr(DeviceAdapter->GetParent(ComCast(&DeviceFactory)));
+	gfx_command_queue          mGraphicsQueue;
+	gfx_command_queue          mComputeQueue;
+	gfx_command_queue          mCopyQueue;
 
-	// Is Tearing supported?
-	bool IsTearingSupported = cAllowTearing;
-	if (IsTearingSupported)
-	{
-		if (FAILED(DeviceFactory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &IsTearingSupported, sizeof(IsTearingSupported))))
-		{
-			IsTearingSupported = false;
-		}
+	cpu_descriptor_allocator   mStaticDescriptors[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];  // Global descriptors, long lived
+	//gpu_descriptor_allocator   mDynamicDescriptors[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES]; // Per Frame descriptors, lifetime is a single frame
 
-		if (!IsTearingSupported)
-		{
-			LogWarn("Tearing support requested, but not available.");
-		}
-	}
+	//gfx_resource_tracker       mResourceStates;                                           // Tracks global resource state
 
-	u32 Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
-	if (IsTearingSupported) Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+	//gfx_mesh_storage           mMeshStorage;
+	//gfx_texture_storage        mTextureStorage;
+	//gfx_material_storage       mMaterialStorage;
+};
 
-	DXGI_SWAP_CHAIN_DESC1 SwapchainDesc = {};
-	SwapchainDesc.Width       = WindowRect.Width;
-	SwapchainDesc.Height      = WindowRect.Height;
-	SwapchainDesc.Format      = cSwapchainFormat;
-	SwapchainDesc.Stereo      = FALSE;
-	SwapchainDesc.SampleDesc  = { .Count = 1, .Quality = 0 }; // Number of multisamples per pixels
-	SwapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	SwapchainDesc.BufferCount = cBackbufferCount;
-	SwapchainDesc.Scaling     = DXGI_SCALING_STRETCH;
-	SwapchainDesc.SwapEffect  = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	SwapchainDesc.AlphaMode   = DXGI_ALPHA_MODE_UNSPECIFIED;
-	SwapchainDesc.Flags       = Flags;
-
-	IDXGISwapChain1* SwapchainBase = nullptr;
-	AssertHr(DeviceFactory->CreateSwapChainForHwnd(gGraphicsQueue.AsHandle(), (HWND)WindowHandle, &SwapchainDesc, nullptr, nullptr, &SwapchainBase));
-
-	// Disable the automatic Alt+Enter fullscreen toggle. We'll do this ourselves to support adaptive refresh rate stuff.
-	AssertHr(DeviceFactory->MakeWindowAssociation((HWND)WindowHandle, DXGI_MWA_NO_ALT_ENTER));
-
-	// Let's get the actual swapchain
-	AssertHr(SwapchainBase->QueryInterface(ComCast(&gSwapchain)));
-	SwapchainBase->Release();
-
-	gBackbufferIndex = gSwapchain->GetCurrentBackBufferIndex();
-	
-	gSwapchain->SetMaximumFrameLatency(cBackbufferCount - 1);
-
-	gSwapchainWidth  = WindowRect.Width;
-	gSwapchainHeight = WindowRect.Height;
-
-	ForRange(u32, i, cMaxBackBufferCount)
-	{
-		gSwapchainFenceValues[i] = 0;
-	}
-
-	// TODO: update render target views
-	// TODO: Wouldn't work for resizing. Technically, we are not guarenteed for the number of backbuffers to
-	// remain the same. Will need to iterate over this list and free the max and then initialize new buffers.
-	ForRange(u32, i, cBackbufferCount)
-	{
-		ID3D12Resource* Backbuffer = nullptr;
-		AssertHr(gSwapchain->GetBuffer(i, ComCast(&Backbuffer)));
-
-		D3D12_CLEAR_VALUE ClearValue = {};
-		ClearValue.Format   = cSwapchainFormat;
-		ClearValue.Color[0] = 0.0f;
-		ClearValue.Color[1] = 0.0f;
-		ClearValue.Color[2] = 0.0f;
-		ClearValue.Color[3] = 1.0f;
-
-		gBackbuffers[i].Release(); // Release any lingering buffers
-		gBackbuffers[i] = gfx_resource(gDevice, Backbuffer, ClearValue);
-	}
-
-	ComSafeRelease(DeviceFactory);
-}
-
-fn_internal u64
-SwapchainPresent()
+struct per_frame_cache
 {
-	const gfx_resource& CurrentBackbuffer = gBackbuffers[gBackbufferIndex];
-	const UINT          SyncInterval      = cVSyncEnabled ? 1 : 0;
+	gfx_global&             Global;
 
-	u32 PresentFlags = 0;
-	if (SyncInterval == 0)
-	{
-		DXGI_SWAP_CHAIN_DESC1 Desc = {};
-		AssertHr(gSwapchain->GetDesc1(&Desc));
+	//darray<resource*>       StaleResources;         // Resources that needs to be freed. Is freed on next use
+	//darray<gfx_upload_data> ToUploadData;           // Resources that needs to be placed on the GPU. 
 
-		if ((Desc.Flags & DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING) != 0)
-			PresentFlags |= DXGI_PRESENT_ALLOW_TEARING;
-	}
+	//gfx_resource_tracker    ResourceStateCache;     // Tracks Temporary resource state. Often is flushed before a draw call
+};
 
-	AssertHr(gSwapchain->Present(SyncInterval, PresentFlags));
+constexpr  int              cMaxFrameCache                 = 5; // Keep up to 5 frames
+var_global per_frame_cache  gPerFrameCache[cMaxFrameCache];
+var_global per_frame_cache& gFrameCache;
 
-	gSwapchainFenceValues[gBackbufferIndex] = gGraphicsQueue.Signal();
-	gBackbufferIndex = gSwapchain->GetCurrentBackBufferIndex();
-	
-	gGraphicsQueue.WaitForFence(gSwapchainFenceValues[gBackbufferIndex]);
+var_global gpu_descriptor_allocator gGpuDescriptors;
 
-	return gBackbufferIndex;
-}
 
-fn_internal void
-SwapchainRelease()
+struct gfx_render_pass
 {
-	ForRange(u32, i, cMaxBackBufferCount)
-	{ // Release all possible backbuffers
-		gBackbuffers[i].Release();
-	}
+	gpu_descriptor_allocation DynamicDescriptors[MAX_DESCRIPTOR_TYPES]; // Lifetime is a single frame.
+};
 
-	ComSafeRelease(gSwapchain);
-}
+struct forward_pass : public gfx_render_pass
+{
+	// Needs 3 SRV Descriptors
+	// Needs 1 UAV Descriptor
+
+	// GPU descriptor SRV Material Table
+
+};
+
+struct gfx_material_storage
+{
+	// gpu_descriptor { .ptr = nullptr }
+
+	gpu_descriptor* mGpuDescriptors;   // Per-Frame, size based on the GpuCache
+	material_data*  mMaterialStorage;  // All possible materials
+	gpu_buffer*     mMaterialGpuCache; // Data on the GPU
+
+	// and so forth
+};
+
+#endif
+
 
 void
 SimpleRendererInit(simple_renderer_info& RenderInfo)
@@ -282,32 +219,72 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 	gDevice.Init();
 	gGraphicsQueue = gfx_command_queue(gHeapAllocator, gfx_command_queue_type::graphics, &gDevice);
 
-	CreateSwapchain(RenderInfo.ClientWindow);
-
 	// Create the CPU Descriptor Allocators
 	ForRange(u32, i, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES)
 	{
 		gCpuDescriptors[i].Init(&gDevice, gHeapAllocator, (D3D12_DESCRIPTOR_HEAP_TYPE)i);
 	}
+
+	gfx_swapchain_info SwapchainInfo = {
+		.mDevice                    = &gDevice,
+		.mPresentQueue              = &gGraphicsQueue,
+		.mRenderTargetDesciptorHeap = &gCpuDescriptors[D3D12_DESCRIPTOR_HEAP_TYPE_RTV],
+		// Leave everything else at their defaults for now...
+	};
+
+	gSwapchain = gfx_swapchain(SwapchainInfo, RenderInfo.ClientWindow);
 }
 
 void
 SimpleRendererRender()
 {
-	SwapchainPresent();
+	//gFrameCache = gPerFrameCache[gFrameCount % cMaxFrameCache];
 
 	gGraphicsQueue.ProcessCommandLists();
+
+	const gfx_resource& Backbuffer            = gSwapchain.GetCurrentBackbuffer();
+	const cpu_descriptor& SwapchainDescriptor = gSwapchain.GetCurrentRenderTarget();
+
+	gfx_command_list* List = gGraphicsQueue.GetCommandList();
+
+	D3D12_RESOURCE_BARRIER ToClearBarrier = {};
+	ToClearBarrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	ToClearBarrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	ToClearBarrier.Transition.pResource   = Backbuffer.AsHandle();
+	ToClearBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+	ToClearBarrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	ToClearBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	List->AsHandle()->ResourceBarrier(1, &ToClearBarrier);
+
+	f32 ClearColor[4] = { 1.0f, 0.0f, 1.0f, 1.0f };
+	List->AsHandle()->ClearRenderTargetView(SwapchainDescriptor.GetDescriptorHandle(), ClearColor, 0, nullptr);
+
+	D3D12_RESOURCE_BARRIER ToRenderBarrier = {};
+	ToRenderBarrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	ToRenderBarrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	ToRenderBarrier.Transition.pResource   = Backbuffer.AsHandle();
+	ToRenderBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	ToRenderBarrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_PRESENT; //D3D12_RESOURCE_STATE_RENDER_TARGET
+	ToRenderBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	List->AsHandle()->ResourceBarrier(1, &ToRenderBarrier);
+
+	gGraphicsQueue.ExecuteCommandLists(farray(&List, 1));
+
+	gSwapchain.Present();
+
+	gFrameCount += 1;
 }
 
 void
 SimpleRendererDeinit()
 {
+	gSwapchain.Deinit();
+
 	ForRange(u32, i, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES)
 	{
 		gCpuDescriptors[i].Deinit();
 	}
 
-	SwapchainRelease();
 	gGraphicsQueue.Deinit();
 	gDevice.Deinit();
 }
