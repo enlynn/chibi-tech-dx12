@@ -23,7 +23,7 @@ struct istr16
 {
 public:
     istr16() = delete;
-    const     istr16(const c16* Ptr);
+    istr16(const c16* Ptr);
     constexpr istr16(const c16* Ptr, u64 Length) : mBorrowedPtr(Ptr), mLen(Length) {}
 
     constexpr operator const c16* () const { return mBorrowedPtr; }

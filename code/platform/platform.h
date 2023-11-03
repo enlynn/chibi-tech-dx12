@@ -115,7 +115,7 @@ enum class log_flags : u8
 	count,
 };
 
-using log_flags_bitset = bitset<log_flags, (u32)log_flags::count>;
+using log_flags_bitset = bitset<log_flags>;
 
 enum class log_level : u8
 {
@@ -168,5 +168,15 @@ void PlatformLogSystemLog(log_level LogLevel, const char* File, int Line, const 
 void PlatformLogToConsole(bool IsError, log_color Foreground, log_color Background, const struct istr8& Message);
 void PlatformLogToDebugConsole(const struct istr8& Message);
 
+// Exit the current application. This is the equivalent of an app crash. Useful for error states
+// that aren't detected with assert. LogFatal is an example of this usage.
+void PlatformExitProcess();
+
+//
+// File I/O
+// 
+
+// AbsolutePath - utf8 filepath. On windows this will be converted to utf16 - this is a requirement for File I/O on Windows.
+bool PlatformLoadFileIntoBuffer(class allocator& Allocator, istr8 AbsolutePath, u8** Buffer, u64* BufferSize);
 
 #endif //_PLATFORM_H_

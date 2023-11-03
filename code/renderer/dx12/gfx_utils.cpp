@@ -10,3 +10,51 @@ D3D12_HEAP_PROPERTIES GetHeapProperties(D3D12_HEAP_TYPE Type)
     Result.VisibleNodeMask       = 1;
     return Result;
 }
+
+D3D12_RESOURCE_DESC
+GetResourceDesc(
+    D3D12_RESOURCE_DIMENSION Dimension,
+    UINT64                   Alignment,
+    UINT64                   Width,
+    UINT                     Height,
+    UINT16                   DepthOrArraySize,
+    UINT16                   MipLevels,
+    DXGI_FORMAT              Format,
+    UINT                     SampleCount,
+    UINT                     SampleQuality,
+    D3D12_TEXTURE_LAYOUT     Layout,
+    D3D12_RESOURCE_FLAGS     Flags)
+{
+    D3D12_RESOURCE_DESC Result = {};
+    Result.Dimension           = Dimension;
+    Result.Alignment           = Alignment;
+    Result.Width               = Width;
+    Result.Height              = Height;
+    Result.DepthOrArraySize    = DepthOrArraySize;
+    Result.MipLevels           = MipLevels;
+    Result.Format              = Format;
+    Result.SampleDesc.Count    = SampleCount;
+    Result.SampleDesc.Quality  = SampleQuality;
+    Result.Layout              = Layout;
+    Result.Flags               = Flags;
+    return Result;
+}
+
+D3D12_RESOURCE_DESC
+GetBufferResourceDesc(
+    D3D12_RESOURCE_ALLOCATION_INFO& ResAllocInfo,
+    D3D12_RESOURCE_FLAGS            Flags)
+{
+    return GetResourceDesc(D3D12_RESOURCE_DIMENSION_BUFFER, ResAllocInfo.Alignment, ResAllocInfo.SizeInBytes,
+                            1, 1, 1, DXGI_FORMAT_UNKNOWN, 1, 0, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, Flags);
+}
+
+D3D12_RESOURCE_DESC
+GetBufferResourceDesc(
+    u64                  Width,
+    D3D12_RESOURCE_FLAGS Flags,
+    u64                  Alignment)
+{
+    return GetResourceDesc(D3D12_RESOURCE_DIMENSION_BUFFER, Alignment, Width, 1, 1, 1,
+                            DXGI_FORMAT_UNKNOWN, 1, 0, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, Flags);
+}

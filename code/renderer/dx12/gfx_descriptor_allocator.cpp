@@ -140,9 +140,9 @@ cpu_descriptor_page::FreeBlock(u32 Offset, u32 NumDescriptors)
 	// |                                 |
 	// | <------ prevblock.count ------> | <------ count ------> | 
 	//
-	if (PrevBlockIndex >= 0 && mFreeDescriptors[PrevBlockIndex].Offset + mFreeDescriptors[PrevBlockIndex].Count == Offset)
+	if (PrevBlockIndex >= 0 && mFreeDescriptors[u64(PrevBlockIndex)].Offset + mFreeDescriptors[u64(PrevBlockIndex)].Count == Offset)
 	{
-		mFreeDescriptors[PrevBlockIndex].Count += NumDescriptors;
+		mFreeDescriptors[u64(PrevBlockIndex)].Count += NumDescriptors;
 		DidMerge     = true;
 		DidMergeLeft = true;
 	}
@@ -154,16 +154,16 @@ cpu_descriptor_page::FreeBlock(u32 Offset, u32 NumDescriptors)
 	// |                      |
 	// | <------ size ------> | <------ nextblock.size ------> | 
 	//
-	if (NextBlockIndex >= 0 && Offset + NumDescriptors == mFreeDescriptors[NextBlockIndex].Offset)
+	if (NextBlockIndex >= 0 && Offset + NumDescriptors == mFreeDescriptors[u64(NextBlockIndex)].Offset)
 	{
 		if (DidMergeLeft)
 		{ // Need to move the right block to the left
-			mFreeDescriptors[PrevBlockIndex].Count += mFreeDescriptors[NextBlockIndex].Count;
+			mFreeDescriptors[u64(PrevBlockIndex)].Count += mFreeDescriptors[u64(NextBlockIndex)].Count;
 			mFreeDescriptors.Remove(NextBlockIndex);
 		}
 		else
 		{ // We can plop the new block here
-			mFreeDescriptors[NextBlockIndex].Count += NumDescriptors;
+			mFreeDescriptors[u64(NextBlockIndex)].Count += NumDescriptors;
 		}
 
 		DidMerge = true;

@@ -13,8 +13,9 @@ template<class T>
 class farray
 {
 public:
-	farray() = delete;
-	constexpr farray(T* Array, u64 Count) : mArray(Array), mCount(Count) {}
+	farray() : mArray(nullptr), mCount(0) {};
+	constexpr farray(T* Array, u64 Count) : mArray(Array), mCount(Count)  {}
+	constexpr farray(T Array[]) : mArray(Array), mCount(ArrayCount(Array)) {}
 
 	farray(const allocator& Allocator, u64 Count)
 	{
@@ -68,6 +69,42 @@ public:
 private:
 	T*  mArray = nullptr;
 	u64 mCount = 0;
+};
+
+// Stack Array where the size is determined at compile time. Most similar to std::array
+template<class T, u64 MaxSize>
+class sarray
+{
+public:
+	sarray() {}
+
+	~sarray() { mArray = {}; }
+
+	void Deinit(const allocator& Allocator)
+	{
+		mArray = {};
+	}
+
+	constexpr operator const T* ()           const { return mArray; }
+	constexpr operator T* ()                       { return mArray; }
+
+	//constexpr u64      Length()              const { return mCount; }
+	constexpr const T* Ptr()                 const { return mArray; }
+	constexpr       T* Ptr()                       { return mArray; }
+
+	constexpr const T& operator[](u64 Index) const { return Ptr()[Index];     }
+	constexpr       T& operator[](u64 Index)       { return Ptr()[Index];     }
+
+	// Legacy iterators
+	constexpr const T* begin()               const { return Ptr();            }
+	constexpr const T* end()                 const { return Ptr() + MaxSize;  }
+	constexpr       T* begin()                     { return Ptr();            }
+	constexpr       T* end()                       { return Ptr() + MaxSize;  }
+
+	inline friend bool operator!=(sarray Lhs, sarray Rhs)  { return !(Lhs == Rhs); }
+
+private:
+	T mArray[MaxSize] = {};
 };
 
 // mutable array, owns memory and will self-deconstruct
@@ -130,21 +167,18 @@ public:
 		assert(Index <= mCount);
 		assert(Index >= 0);
 		ExpandIfNeeded(mCount + 1);
-		
-		if (Index < mCount)
+
+		for (u64 i = mCount - 1; i <= Index; --i)
 		{
-			for (u64 i = Index + 1; i <= mCount; ++i)
-			{
-				mArray[i] = mArray[i - 1];
-			}
+			mArray[i + 1] = mArray[i];
 		}
 
 		mArray[Index] = Element;
 		mCount       += 1;
 	}
 
-	inline void PushFront(T& Element)              { Insert(Element, mCount); }
-	inline void PushBack(T& Element)               { Insert(Element, 0);      }
+	inline void PushFront(T& Element)              { Insert(Element, 0);      }
+	inline void PushBack(T& Element)               { Insert(Element, mCount); }
 
 	// Remove functions
 	void Remove(u64 Index)

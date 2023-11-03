@@ -12,6 +12,12 @@
 # define PLATFORM_WIN32 0
 #endif
 
+#if defined(_DEBUG) || (DEBUG)
+# define DEBUG_BUILD 1
+#else 
+# define DEBUG_BUILD 0
+#endif
+
 typedef char8_t   c8;
 typedef char16_t  c16;
 typedef char32_t  c32;
@@ -37,6 +43,12 @@ typedef double    f64;
 typedef uintptr_t uptr;
 typedef intptr_t  sptr;
 
+union u128
+{
+    struct { s64 Upper, Lower; };
+    s64 Bits[2];
+};
+
 #define U8_MAX   UINT8_MAX
 #define U16_MAX  UINT16_MAX
 #define U32_MAX  UINT32_MAX
@@ -51,8 +63,8 @@ typedef intptr_t  sptr;
 #define F64_MAX  DBL_MAX
 
 #define fn            extern "C"
-#define fn_internal   fn static
-#define fn_inline     fn inline
+#define fn_internal   static
+#define fn_inline     inline
 #define fn_imported   fn __declspec( dllimport )
 #define fn_exported   fn __declspec( dllexport )
 
@@ -76,6 +88,7 @@ typedef intptr_t  sptr;
 #define _1GB   _GB(1)
 
 // A hack to determine if platform is little endian
+// TODO(enlynn): Do something that isn't so hacky.
 #define LITTLE_ENDIAN 0x41424344UL 
 #define ENDIAN_ORDER  ('ABCD') 
 #define IS_LITTLE_ENDIAN (ENDIAN_ORDER==LITTLE_ENDIAN)
@@ -85,6 +98,7 @@ typedef intptr_t  sptr;
 #define BackwardAlign(Base, Alignment) (ForwardAlign(((Base) + 1), Alignment) - (Alignment))
 #define DivideAlign(val, align) (((val) + (align) - 1) / (align))
 // Should handle overflow and +/- numbers
+// TODO(enlynn): Maybe write out as a define?
 template<typename T> 
 constexpr T DivideCeil(T Numerator, T Denominator)
 {
@@ -152,7 +166,7 @@ FastMin(int min, int max)
     * Round up to the next highest power of 2.
     * @source: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
     */
-inline u32
+fn_inline u32
 NextHighestPow2_u32(u32 v)
 {
     v--;
@@ -169,7 +183,7 @@ NextHighestPow2_u32(u32 v)
 * Round up to the next highest power of 2.
 * @source: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
 */
-inline u64
+fn_inline u64
 NextHighestPow2_u64(u64 v)
 {
     v--;

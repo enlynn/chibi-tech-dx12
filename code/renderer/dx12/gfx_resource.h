@@ -12,9 +12,9 @@ class gfx_resource
 public:
 	gfx_resource() = default;
 	// Usually external code will not directly initialize a gfx_resource. Usually it will be a Swapchain or Storage Buffer
-	gfx_resource(const gfx_device& Device, const D3D12_RESOURCE_DESC& Desc, std::optional <D3D12_CLEAR_VALUE> ClearValue);
+	gfx_resource(const gfx_device& Device, const D3D12_RESOURCE_DESC& Desc, std::optional <D3D12_CLEAR_VALUE> ClearValue = std::nullopt);
 	// Assumes ownership of the resource
-	gfx_resource(const gfx_device& Device, ID3D12Resource* Resource, std::optional <D3D12_CLEAR_VALUE> ClearValue);
+	gfx_resource(const gfx_device& Device, ID3D12Resource* Resource, std::optional <D3D12_CLEAR_VALUE> ClearValue = std::nullopt);
 
 	~gfx_resource() {} // For a gfx_resource, we need to explicitly clear the value to prevent erroneous resource frees
 	
@@ -22,10 +22,10 @@ public:
 
 	bool                                    CheckFormatSupport(D3D12_FORMAT_SUPPORT1 FormatSupport);
 	bool                                    CheckFormatSupport(D3D12_FORMAT_SUPPORT2 FormatSupport);
-	// Check the format support and populate the _format_support structure.
+	// Check the format support and populate the mFormatSupport structure.
 	void                                    CheckFeatureSupport(const gfx_device& Device);
 
-	D3D12_RESOURCE_DESC                     GetResourceDesc();
+	D3D12_RESOURCE_DESC                     GetResourceDesc() const;
 
 	inline ID3D12Resource*                  AsHandle()      const { return mHandle;            }
 	inline bool                             IsValid()       const { return mHandle != nullptr; }

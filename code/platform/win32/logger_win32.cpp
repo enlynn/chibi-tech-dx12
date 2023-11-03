@@ -142,7 +142,7 @@ Win32RedirectConsoleIo()
 
 // Sets up a standard stream (stdout or stderr).
 fn_internal win32_standard_stream 
-win32_get_standard_stream(DWORD StreamType)
+Win32GetStandardStream(DWORD StreamType)
 {
     win32_standard_stream Result{};
 
@@ -173,7 +173,7 @@ win32_get_standard_stream(DWORD StreamType)
 }
 
 // Prints a message to a platform stream. If the stream is a console, uses supplied colors.
-static void win32_print_to_stream(const char* message, s64 message_length, win32_standard_stream stream, WORD text_color)
+static void Win32PrintToStream(const char* message, s64 message_length, win32_standard_stream stream, WORD text_color)
 {
     // If redirected, write to a file instead of console.
     DWORD dummy;
@@ -202,13 +202,13 @@ PlatformLogToConsole(bool IsError, log_color Foreground, log_color Background, c
 
     if (IsError)
     {
-        var_persist win32_standard_stream ErrorStream = win32_get_standard_stream(STD_ERROR_HANDLE);
-        win32_print_to_stream(Message.Ptr(), Message.Length(), ErrorStream, Win32ConsoleColor);
+        var_persist win32_standard_stream ErrorStream = Win32GetStandardStream(STD_ERROR_HANDLE);
+        Win32PrintToStream(Message.Ptr(), Message.Length(), ErrorStream, Win32ConsoleColor);
     }
     else
     {
-        var_persist win32_standard_stream stream = win32_get_standard_stream(STD_OUTPUT_HANDLE);
-        win32_print_to_stream(Message.Ptr(), Message.Length(), stream, Win32ConsoleColor);
+        var_persist win32_standard_stream StandardStream = Win32GetStandardStream(STD_OUTPUT_HANDLE);
+        Win32PrintToStream(Message.Ptr(), Message.Length(), StandardStream, Win32ConsoleColor);
     }
 }
 

@@ -155,4 +155,9 @@ PlatformLogSystemLog(log_level LogLevel, const char* File, int Line, const char*
 		PlatformLogToDebugConsole(FullMessage);
 	}
 #endif
+
+	if (LogLevel == log_level::fatal)
+	{
+		PlatformExitProcess();
+	}
 }

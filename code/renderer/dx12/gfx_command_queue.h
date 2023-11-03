@@ -4,6 +4,8 @@
 #include <util/allocator.h> //allocator
 #include <util/array.h>     //farray<gfx_cmd_list>
 
+#include <deque> // for testing
+
 class gfx_device;
 class gfx_command_list;
 
@@ -77,4 +79,8 @@ private:
 
 	darray<in_flight_list>    mInFlightCommandLists                                           = {};
 	darray<gfx_command_list*> mAvailableFlightCommandLists[u32(gfx_command_list_type::count)] = {}; // slot for each array type
+
+	//std::deque<in_flight_list>    mInFlightCommandLists = {};
+	//std::deque<gfx_command_list*> mAvailableFlightCommandLists[u32(gfx_command_list_type::count)] = {};
+
 };

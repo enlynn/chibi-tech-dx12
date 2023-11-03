@@ -1,7 +1,16 @@
 ﻿# CMakeList.txt : CMake project for chibi-tech, include source and define
 # project specific logic here.
 #
+# For now, to run the app, must manually pass the content directory path. If using
+# Visual Studio, 
+#	Debug -> Debug and Launch Settings for chibi-tech
+#	This will open launch.vs.json
+#	Add the following entry:
+#		"args": [ "${workspaceRoot}\\content" ]
+#
 cmake_minimum_required (VERSION 3.8)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Enable Hot Reload for MSVC compilers if supported.
 if (POLICY CMP0141)
@@ -19,7 +28,7 @@ set(PLATFORM_WIN32
 	"code/platform/win32/logger_win32.cpp"
 	"code/platform/win32/common_win32.cpp"
 	"code/platform/platform_logger.cpp"
-)
+ "code/platform/win32/file_win32.cpp")
 
 set(UTIL
 	"code/util/str8.h"      "code/util/str8.cpp"
@@ -39,7 +48,14 @@ set(RENDERER
 	"code/renderer/dx12/gfx_resource.h"                     "code/renderer/dx12/gfx_resource.cpp" 
 	"code/renderer/dx12/gfx_utils.h"                        "code/renderer/dx12/gfx_utils.cpp" 
 	"code/renderer/dx12/gfx_descriptor_allocator.h"         "code/renderer/dx12/gfx_descriptor_allocator.cpp"
-	"code/renderer/dx12/gfx_dynamic_descriptor_allocator.h" "code/renderer/dx12/gfx_dynamic_descriptor_allocator.cpp")
+	"code/renderer/dx12/gfx_dynamic_descriptor_allocator.h" "code/renderer/dx12/gfx_dynamic_descriptor_allocator.cpp" 
+	"code/renderer/dx12/gfx_root_signature.h"               "code/renderer/dx12/gfx_root_signature.cpp"
+	"code/renderer/dx12/gfx_pso.h"                          "code/renderer/dx12/gfx_pso.cpp"
+ "code/renderer/dx12/gfx_shader_utils.h" "code/renderer/dx12/gfx_shader_utils.cpp")
+
+set(SYSTEMS
+	"code/systems/resource_system.h" "code/systems/resource_system.cpp"
+)
 
 # Add source to this project's executable.
 add_executable (chibi-tech 
@@ -47,7 +63,8 @@ add_executable (chibi-tech
 	${PLATFORM_WIN32}
 	${UTIL}
 	${RENDERER}
-)
+	${SYSTEMS}
+ )
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET chibi-tech PROPERTY CXX_STANDARD 20)

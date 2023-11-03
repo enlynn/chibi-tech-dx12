@@ -38,6 +38,8 @@ public:
 	const gfx_resource&   GetCurrentBackbuffer()   const { return mBackbuffers[mBackbufferIndex]; }
 	const cpu_descriptor& GetCurrentRenderTarget() const { return mDescriptors[mBackbufferIndex]; }
 
+	DXGI_FORMAT           GetSwapchainFormat()     const { return mInfo.mSwapchainFormat;         }
+	 
 	static constexpr u32 cMaxBackBufferCount = DXGI_MAX_SWAP_CHAIN_BUFFERS;
 
 private:

@@ -4,7 +4,7 @@
 
 // Retrieve the BitMask for Unsigned Ints only.
 template<typename T> constexpr T   BitMask(T BitIndex)   = delete;
-template<>           constexpr u8  BitMask(u8 BitIndex)  { assert(BitIndex < 8);  return (u8)((u8)1 << BitIndex); }
+template<>           constexpr u8  BitMask(u8 BitIndex)  { assert(BitIndex < 8);  return (u8) ((u8)1 << BitIndex); }
 template<>           constexpr u16 BitMask(u16 BitIndex) { assert(BitIndex < 16); return (u16)((u16)1 << BitIndex); }
 template<>           constexpr u32 BitMask(u32 BitIndex) { assert(BitIndex < 32); return (u32)((u32)1 << BitIndex); }
 template<>           constexpr u64 BitMask(u64 BitIndex) { assert(BitIndex < 64); return (u64)((u64)1 << BitIndex); }
@@ -44,7 +44,7 @@ template<>           constexpr u16 IsBitSet(u16 Value, u16 BitIndex) { assert(Bi
 template<>           constexpr u32 IsBitSet(u32 Value, u32 BitIndex) { assert(BitIndex < 32); return ((Value >> BitIndex) & ((u32)1)) != 0; }
 template<>           constexpr u64 IsBitSet(u64 Value, u64 BitIndex) { assert(BitIndex < 64); return ((Value >> BitIndex) & ((u64)1)) != 0; }
 
-template<typename T, u32 MaxEnumValue>
+template<typename T, u32 MaxEnumValue = 64>
 class bitset
 {
 public:
@@ -56,7 +56,7 @@ public:
 		u64 EnumValue = (u64)Enum;
 
 		u64 Index = EnumValue / sizeof(mBits[0]);
-		u64 Bit = EnumValue   % sizeof(mBits[0]);
+		u64 Bit   = EnumValue % sizeof(mBits[0]);
 
 		assert(Index < ArrayCount(mBits));
 
@@ -70,7 +70,7 @@ public:
 		u64 EnumValue = (u64)Enum;
 
 		u64 Index = EnumValue / sizeof(mBits[0]);
-		u64 Bit = EnumValue   % sizeof(mBits[0]);
+		u64 Bit   = EnumValue % sizeof(mBits[0]);
 
 		assert(Index < ArrayCount(mBits));
 
@@ -84,7 +84,7 @@ public:
 		u64 EnumValue = (u64)Enum;
 
 		u64 Index = EnumValue / sizeof(mBits[0]);
-		u64 Bit = EnumValue   % sizeof(mBits[0]);
+		u64 Bit   = EnumValue % sizeof(mBits[0]);
 
 		assert(Index < ArrayCount(mBits));
 

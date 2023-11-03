@@ -30,7 +30,7 @@ EncodeLength(u64 Length)
     u64 EncodedLength = 0;
 
     u64 Size      =   STACK_STR_SIZE - Length;
-    Size          <<= 1;                         // Zero the bottom bit
+    Size          <<= 1;                         // Zero the bottom bit (multiply by 2)
     Size          <<= SMALL_STRING_SHIFT;        // Set length to bottom byte
     EncodedLength |=  Size;
     
@@ -44,7 +44,7 @@ DecodeLength(u64 EncodedLength)
 
     DecodedLength =   EncodedLength;
     DecodedLength &=  SMALL_STRING_MASK;              // Get the length byte
-    DecodedLength >>= SMALL_STRING_SHIFT;
+    DecodedLength >>= SMALL_STRING_SHIFT;             // Shift length down to lower bytes
     DecodedLength >>= 1;                              // Divide by two
     DecodedLength =   STACK_STR_SIZE - DecodedLength; // Reverse the length (gets stored as STACK_STR_SIZE - length)
      
@@ -125,9 +125,13 @@ mstr8::mstr8()
     mFooter.Stack.EncodedLen = EncodeLength(0);
 }
 
-mstr8::mstr8(const char* Ptr, u64 Length) : mstr8()
+mstr8::mstr8(const char* Ptr, u64 Length) //: mstr8()
 {
     assert(Ptr);
+
+    mData.Heap.Ptr        = nullptr;
+    mData.Heap.Length     = 0;
+    mFooter.Heap.Capacity = 0;
 
     if (Length <= STACK_STR_SIZE)
     { // Reserve fits on the stack
@@ -195,8 +199,12 @@ mstr8::mstr8(const istr16* Str16) : mstr8()
     }
 }
 
-mstr8::mstr8(const mstr8& Other) : mstr8()
+mstr8::mstr8(const mstr8& Other) //: mstr8()
 {
+    mData.Heap.Ptr        = nullptr;
+    mData.Heap.Length     = 0;
+    mFooter.Heap.Capacity = 0;
+
     u64 OtherLength = Other.Length();
 
     if (Other.IsHeap())
@@ -221,20 +229,23 @@ mstr8::mstr8(const mstr8& Other) : mstr8()
     }
 }
 
-mstr8::mstr8(mstr8&& Other) : mstr8()
+mstr8::mstr8(mstr8&& Other) //: mstr8()
 {
+    mData.Heap.Ptr = nullptr;
+    mData.Heap.Length = 0;
+    mFooter.Heap.Capacity = 0;
+
     if (Other.IsHeap())
     {
-        mData.Heap.Ptr        = Other.Ptr();
-        mData.Heap.Length     = Other.Length();
-        mFooter.Heap.Capacity = Other.Capacity();
+        mData   = Other.mData;
+        mFooter = Other.mFooter;
     }
     else
     {
         u64 OtherLength = Other.Length();
         memcpy(mData.Stack.Ptr, Other.Ptr(), OtherLength);
         mData.Stack.Ptr[OtherLength] = 0;
-        mFooter.Stack.EncodedLen = EncodeLength(OtherLength);
+        mFooter.Stack.EncodedLen |= EncodeLength(OtherLength);
     }
 
     Other.mData.Heap.Ptr        = nullptr;
@@ -245,9 +256,9 @@ mstr8::mstr8(mstr8&& Other) : mstr8()
 mstr8& 
 mstr8::operator=(const mstr8& Other)
 {
-    mData.Heap.Ptr = nullptr;
-    mData.Heap.Length = 0;
-    mFooter.Stack.EncodedLen = EncodeLength(0);
+    mData.Heap.Ptr        = nullptr;
+    mData.Heap.Length     = 0;
+    mFooter.Heap.Capacity = 0;
 
     u64 OtherLength = Other.Length();
 
@@ -280,20 +291,20 @@ mstr8::operator=(mstr8&& Other)
 {
     mData.Heap.Ptr = nullptr;
     mData.Heap.Length = 0;
-    mFooter.Stack.EncodedLen = EncodeLength(0);
+    mFooter.Stack.EncodedLen = 0;
 
     if (Other.IsHeap())
     {
         mData.Heap.Ptr        = Other.Ptr();
         mData.Heap.Length     = Other.Length();
-        mFooter.Heap.Capacity = Other.Capacity();
+        mFooter.Heap.Capacity = Other.mFooter.Heap.Capacity; // Capacity is encoded
     }
     else
     {
         u64 OtherLength = Other.Length();
         memcpy(mData.Stack.Ptr, Other.Ptr(), OtherLength);
         mData.Stack.Ptr[OtherLength] = 0;
-        mFooter.Stack.EncodedLen = EncodeLength(OtherLength);
+        mFooter.Stack.EncodedLen |= EncodeLength(OtherLength);
     }
 
     Other.mData.Heap.Ptr        = nullptr;
@@ -384,12 +395,12 @@ mstr8::ExpandIfNeeded(u64 RequiredCapacity)
         char* NewPtr = (char*)malloc(NewCapacity);
         memcpy(NewPtr, mData.Stack.Ptr, OldLength);
 
-        mData.Heap.Ptr = NewPtr;
+        mData.Heap.Ptr            = NewPtr;
         mData.Heap.Ptr[OldLength] = 0;
     }
 
     // heap remains set to 0 to mark it as dirty set bottom bit to 1, to mark the heap
-    mFooter.Heap.Capacity = NewCapacity;
+    mFooter.Heap.Capacity  = NewCapacity;
     mFooter.Heap.Capacity |= BitMask(HEAP_STRING_BIT);
 }
 
@@ -430,7 +441,16 @@ mstr8::ShrinkToFit()
 constexpr u64 
 mstr8::Length() const
 {
-    u64 Result = IsHeap() ? mData.Heap.Length : DecodeLength(mFooter.Stack.EncodedLen);
+    u64 Result;
+    if (IsHeap())
+    {
+        Result = mData.Heap.Length;
+    }
+    else
+    {
+        Result = DecodeLength(mFooter.Stack.EncodedLen);
+    }
+
     return Result;
 }
 

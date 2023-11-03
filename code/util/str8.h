@@ -9,7 +9,7 @@
 //
 
 /// <summary>
-/// Immutable String type than can hodl ASCII or UTF-8 strings. This is a 
+/// Immutable String type than can hold ASCII or UTF-8 strings. This is a 
 /// conviencience type for passing around (const char*, length) to functions.
 /// 
 /// The string is *not* owned by this type.
@@ -17,9 +17,9 @@
 struct istr8
 {
 public:
-    istr8() = delete;
-    const istr8(const char* Ptr);
-    constexpr istr8(const char* Ptr, u64 Length) : mBorrowedPtr(Ptr), mLen(Length) {}
+    istr8() : mBorrowedPtr(nullptr), mLen(0) {}
+    istr8(const char* Ptr);
+    istr8(const char* Ptr, u64 Length) : mBorrowedPtr(Ptr), mLen(Length) {}
 
     constexpr operator const char* () const { return mBorrowedPtr; }
 
@@ -78,7 +78,7 @@ public:
     constexpr const char* Ptr() const { return IsHeap() ? mData.Heap.Ptr : mData.Stack.Ptr; }
     constexpr char*       Ptr()       { return IsHeap() ? mData.Heap.Ptr : mData.Stack.Ptr; }
 
-    constexpr operator istr8       () const { return istr8(Ptr(), Length()); }
+    operator istr8       () const { return istr8(Ptr(), Length()); }
     constexpr operator const char* () const { return Ptr();                  }
     constexpr operator char*       ()       { return Ptr();                  }
 

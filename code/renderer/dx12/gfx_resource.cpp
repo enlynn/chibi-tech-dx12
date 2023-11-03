@@ -54,7 +54,7 @@ gfx_resource::CheckFormatSupport(D3D12_FORMAT_SUPPORT2 formatSupport)
 }
 
 D3D12_RESOURCE_DESC 
-gfx_resource::GetResourceDesc()
+gfx_resource::GetResourceDesc() const
 {
 	D3D12_RESOURCE_DESC Result = {};
 	if (IsValid())

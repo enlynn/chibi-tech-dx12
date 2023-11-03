@@ -148,7 +148,7 @@ gfx_command_queue::GetCommandList(gfx_command_list_type Type)
 	gfx_command_list* Result = mAllocator.Alloc<gfx_command_list>();
 	if (mAvailableFlightCommandLists[TypeIndex].Length() > 0)
 	{
-		Result = mAvailableFlightCommandLists[TypeIndex][0]; // The List was reset when it became available.
+		Result = mAvailableFlightCommandLists[TypeIndex][u64(0)]; // The List was reset when it became available.
 		mAvailableFlightCommandLists[TypeIndex].PopFront();
 	}
 	else
@@ -193,14 +193,15 @@ gfx_command_queue::ExecuteCommandLists(farray<gfx_command_list*> CommandLists)
 void              
 gfx_command_queue::ProcessCommandLists()
 {
-	while (mInFlightCommandLists.Length() > 0 && IsFenceComplete(mInFlightCommandLists[0].FenceValue))
+	while (mInFlightCommandLists.Length() > 0 && IsFenceComplete(mInFlightCommandLists[u64(0)].FenceValue))
 	{
-		in_flight_list List = mInFlightCommandLists[0];
-		mInFlightCommandLists.PopFront();
+		in_flight_list& List = mInFlightCommandLists[u64(0)];
 
 		List.CmdList->Reset(); // Let the command list free any resources it was holding onto
 
 		mAvailableFlightCommandLists[u32(List.CmdList->GetType())].PushBack(List.CmdList);
+
+		mInFlightCommandLists.PopFront();
 	}
 }
 

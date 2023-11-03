@@ -42,7 +42,6 @@ gfx_device::Init()
 		ComSafeRelease(InfoQueue);
 	}
 
-
 	const D3D_FEATURE_LEVEL SupportedFeatureLevels[] = {
 		D3D_FEATURE_LEVEL_12_2,
 		D3D_FEATURE_LEVEL_12_1,
@@ -101,12 +100,14 @@ gfx_device::EnableDebugDevice()
 void
 gfx_device::ReportLiveObjects()
 {
+#if _DEBUG
 	IDXGIDebug1* Debug = nullptr;
 	if (SUCCEEDED(DXGIGetDebugInterface1(0, ComCast(&Debug))))
 	{
 		Debug->ReportLiveObjects(DXGI_DEBUG_D3D12, DXGI_DEBUG_RLO_ALL);
 		ComSafeRelease(Debug);
 	}
+#endif
 }
 
 void 

@@ -141,8 +141,8 @@ platform_window::Init(const char* Name, u32 Width, u32 Height)
 	}
 
 	ShowWindow(Internal->Handle, SW_SHOWNORMAL);
-	mWindowState.IsShown   = true;
-	mInternalState = Internal;
+	mWindowState.IsShown = true;
+	mInternalState       = Internal;
 }
 
 void
