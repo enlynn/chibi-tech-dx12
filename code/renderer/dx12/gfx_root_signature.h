@@ -76,6 +76,7 @@ enum class gfx_descriptor_range_flags : u8
 
 struct gfx_root_descriptor
 {
+    u32                        mRootIndex;                                         // Root Parameter Index must be set
     gfx_descriptor_type        mType           = gfx_descriptor_type::cbv;
     gfx_descriptor_range_flags mFlags          = gfx_descriptor_range_flags::none; // Volatile Descriptors are disallowed for Root Descriptors
     u32                        mShaderRegister = 0;
@@ -86,6 +87,7 @@ struct gfx_root_descriptor
 
 struct gfx_root_constant
 {
+    u32 mRootIndex;          // Root Parameter Index must be set
     u32 mShaderRegister = 0;
     u32 mRegisterSpace  = 0;
     u32 mNum32bitValues = 1;
@@ -105,7 +107,8 @@ struct gfx_descriptor_range
 
 struct gfx_descriptor_table
 {
-    farray<gfx_descriptor_range> DescriptorRanges = {};
+    u32                          mRootIndex;            // Root Parameter Index must be set
+    farray<gfx_descriptor_range> mDescriptorRanges = {};
 
     static constexpr u8 cDWordCount = 1;
 };
@@ -156,8 +159,8 @@ private:
     // Total number of root parameters in the root signature
     u32                         mRootParameterCount         = 0;
     // Need to know number of descriptors per table
-    //  A maximum of 32 descriptor tables are supported
-    u32                         mNumDescriptorsPerTable[32] = {};
+    //  A maximum of 64 descriptor tables are supported
+    u32                         mNumDescriptorsPerTable[64] = {};
     // A bitmask that represents the root parameter indices that 
     // are descriptor tables for Samplers
     u32                         mSamplerTableBitmask        = 0;

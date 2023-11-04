@@ -68,19 +68,21 @@ gfx_root_signature::gfx_root_signature(const gfx_device& Device, const gfx_root_
     // Collect the descriptor tables
     for (const auto& Table : Info.DescriptorTables)
     {
-        D3D12_ROOT_PARAMETER1& Parameter = RootParameters[ParameterCount];
+        D3D12_ROOT_PARAMETER1& Parameter = RootParameters[Table.mRootIndex];
         Parameter.ParameterType          = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
         Parameter.ShaderVisibility       = D3D12_SHADER_VISIBILITY_ALL; // TODO(enlynn): make modifiable
         
-        assert(TotalDescriptorRangeCount + Table.DescriptorRanges.Length() < MaxDescriptorRanges);
+        assert(TotalDescriptorRangeCount + Table.mDescriptorRanges.Length() < MaxDescriptorRanges);
 
         u32 BaseRangeIndex = TotalDescriptorRangeCount;
-        u64 RangeCount     = Table.DescriptorRanges.Length();
+        u64 RangeCount     = Table.mDescriptorRanges.Length();
 
         bool FoundSampler = false;
         bool FoundCSU     = false; // Found a CBV, UAV, or SRV descriptor range.
 
-        for (const auto& Range : Table.DescriptorRanges)
+        mNumDescriptorsPerTable[Table.mRootIndex] = 0;
+
+        for (const auto& Range : Table.mDescriptorRanges)
         {
             D3D12_DESCRIPTOR_RANGE1& DescriptorRange = Ranges[TotalDescriptorRangeCount];
 
@@ -129,6 +131,8 @@ gfx_root_signature::gfx_root_signature(const gfx_device& Device, const gfx_root_
             DescriptorRange.RangeType                         = GfxDescriptorTypeToD3D12(Range.mType);
 
             TotalDescriptorRangeCount += 1;
+
+            mNumDescriptorsPerTable[Table.mRootIndex] += Range.mNumDescriptors;
         }
 
         if (FoundCSU && FoundSampler)
@@ -137,7 +141,7 @@ gfx_root_signature::gfx_root_signature(const gfx_device& Device, const gfx_root_
         }
         else if (FoundCSU)
         { // TODO(enlynn):
-            //_descriptor_table_bitmask |= (1 << i); break;
+            mDescriptorTableBitmask = BitSet(mDescriptorTableBitmask, Table.mRootIndex);
         }
         else if (FoundSampler)
         {// TODO(enlynn):
@@ -163,7 +167,7 @@ gfx_root_signature::gfx_root_signature(const gfx_device& Device, const gfx_root_
     // Collect the root (inline) descriptors
     for (const auto& Descriptor : Info.Descriptors)
     {
-        D3D12_ROOT_PARAMETER1& Parameter = RootParameters[ParameterCount];
+        D3D12_ROOT_PARAMETER1& Parameter = RootParameters[Descriptor.mRootIndex];
         Parameter.ParameterType             = GfxDescriptorTypeToDescriptorParamter(Descriptor.mType);
         Parameter.ShaderVisibility          = D3D12_SHADER_VISIBILITY_ALL; // TODO(enlynn): make modifiable
         Parameter.Descriptor.RegisterSpace  = Descriptor.mRegisterSpace;
@@ -200,7 +204,7 @@ gfx_root_signature::gfx_root_signature(const gfx_device& Device, const gfx_root_
     // Collect the root constants
     for (const auto& Constant : Info.DescriptorConstants)
     {
-        D3D12_ROOT_PARAMETER1& Parameter = RootParameters[ParameterCount];
+        D3D12_ROOT_PARAMETER1& Parameter = RootParameters[Constant.mRootIndex];
         Parameter.ParameterType            = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
         Parameter.ShaderVisibility         = D3D12_SHADER_VISIBILITY_ALL; // TODO(enlynn): make modifiable
         Parameter.Constants.Num32BitValues = Constant.mNum32bitValues;

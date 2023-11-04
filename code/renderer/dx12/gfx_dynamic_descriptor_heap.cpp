@@ -1,8 +1,8 @@
 #include "gfx_dynamic_descriptor_heap.h"
 
+#include "gfx_command_list.h"
 #include "gfx_device.h"
 #include "gfx_root_signature.h"
-#include "gfx_command_list.h"
 
 #include <util/bit.h>
 
@@ -54,7 +54,6 @@ SetComputeRootUAVWrapper(ID3D12GraphicsCommandList* CommandList, UINT RootIndex,
 	CommandList->SetComputeRootUnorderedAccessView(RootIndex, GpuDescriptorHandle);
 }
 
-
 gfx_dynamic_descriptor_heap::gfx_dynamic_descriptor_heap(gfx_device* Device, const allocator& Allocator, dynamic_heap_type Type, u32 CountPerHeap)
 {
 	mDevice             = Device;
@@ -64,8 +63,8 @@ gfx_dynamic_descriptor_heap::gfx_dynamic_descriptor_heap(gfx_device* Device, con
 
 	switch (Type)
 	{
-		case dynamic_heap_type::buffer:  mHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		case dynamic_heap_type::sampler: mHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+		case dynamic_heap_type::buffer:  mHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV; break;
+		case dynamic_heap_type::sampler: mHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;     break;
 	}
 
 	mCpuHandleCache     = mAllocator.AllocArray<D3D12_CPU_DESCRIPTOR_HANDLE>(mDescriptorsPerHeap, allocation_strategy::zero);
@@ -159,7 +158,7 @@ gfx_dynamic_descriptor_heap::StageDescriptors(u32 RootParameterIndex, u32 Descri
 
 	// Copy the source CPU Descriptor into the Descriptor Table's CPU Descriptor Cache
 	D3D12_CPU_DESCRIPTOR_HANDLE* CpuDescriptors = (TableCache->mBaseDescriptor + DescriptorOffset);
-	for (u32 DescriptorIndex = 0; DescriptorIndex < NumDescriptors; ++DescriptorIndex)
+	ForRange (u32, DescriptorIndex, NumDescriptors)
 	{
 		CpuDescriptors[DescriptorIndex].ptr = CpuDescriptorHandle.ptr + DescriptorIndex * mDescriptorStride;
 	}

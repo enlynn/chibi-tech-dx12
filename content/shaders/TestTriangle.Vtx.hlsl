@@ -7,7 +7,8 @@ struct vertex_output
 
 struct simple_vertex
 {
-    float3 f3Position;
+    float2 f2Position;
+    float3 f3Color;
 };
 
 struct vertex_draw_constants
@@ -32,8 +33,8 @@ vertex_output main(uint uVertexId : SV_VertexID)
     simple_vertex Vertex = ExtractVertex(uVertexId, cVertexDrawConstants);
     
     vertex_output Result;
-    Result.f4Position = float4(Vertex.f3Position, 1.0f);
-    Result.f3Color    = float3(1.0f, 0.0f, 0.0f);
+    Result.f4Position = float4(Vertex.f2Position, 0.0f, 1.0f);
+    Result.f3Color    = Vertex.f3Color;
     
     return Result;
 }

@@ -18,123 +18,6 @@
 #include "dx12/d3d12_common.h"
 #include "renderer/dx12/gfx_resource.h"
 
-// 
-// Thinking about descriptors:
-// 
-// Types of Descriptors:
-// - Render Target Views
-// - Depth Stencil Views
-// - Shader Resource Views
-// - Unordered Access Views
-// - Constant Buffer Views
-// - Index Buffer Views
-// - Vertex Buffer Views
-// - Stream Output Views (oo, what are these?)
-// 
-// Descirptors vary in size, so must query their size with ID3D12Device::GetDescriptorHandleIncrementSize
-// - SRV, UAV, CBV need to do this
-// 
-// The App must manage descriptor information and make sure state is managed
-// correctly.
-// 
-// The Driver does not store any data about descriptors. Their primary use is to be
-// placed into descriptor heaps.
-// 
-// CPU Descriptor Handles 
-// - Can be immediately used
-// - Can be resused or their underlying heap disposed of
-// 
-// GPU Descsriptor Handles
-// - Cannot be immedeiately used
-// - Identifies locations on a command list or to be used on the GPU during execution
-// 
-// Null Descriptors
-// - Often used to "fill" Descriptor slots in a Descriptor Array
-// 
-//
-// Descriptor Heaps
-// 
-// From the docs:
-// 
-// A more efficient strategy than the basic one would be to pre-fill descriptor heaps 
-// with descriptors required for the objects (or materials) that are known to be part of 
-// the scene. The idea here is that it is only necessary to set the descriptor table at 
-// draw time, as the descriptor heap is populated ahead of time.
-// 
-// More from the docs:
-// 
-// A variation of the pre-filling strategy is to treat the descriptor heap as one huge 
-// array, containing all the required descriptors in fixed known locations. Then the 
-// draw call needs only to receive a set of constants which are the indices into the 
-// array of where the descriptors are that need to be used.
-// 
-// And finally:
-// 
-// A further optimization is to ensure root constants and root descriptors contain those 
-// that change most frequently, rather than place constants in the descriptor heap. 
-// For most hardware this is an efficient way of handling constants.
-// 
-// Shader Visible Descriptor Heap
-// 
-// - If allocating a descriptor heap smaller than the Device Limit may result in the 
-//   Deiver sub-allocating from a larget heap to prevent swapping heaps. Otherwise
-//   the Driver may force a Wait Idle
-// 
-// - The recommendation to avoid the GPU Idle was kind of vague ... the docs suggested
-//   to "take advantage" of the idle by forcing the wait at certain intervals?
-// 
-// Non Shader Visible Descriptor Heap
-// - All Descriptor Heaps can be minupalted on the CPU
-// - Cannot be used by Shader Visible Heaps
-// - RTVs and DSVs are always Non-Shader visible 
-// - IBVs, VBVs, and SOVs do not have specifc heap types and are passed directly to API methods
-// - After recording into the Command List (i.e. OMSetRenderTargets) the descriptors are
-//   immediately ready for re-use
-// - Implemnentations can choose to bake Descriptor Tables into the command list at recording
-//   to avoid dereferncing the table pointer at execution
-// 
-// Descriptor Visiblity Summary:
-//                | Shader Vis, CPU Write only | Non-Shader Vis, CPU Read/Write
-// CVB, SRV, UAV  | Yes                        | Yes
-// Sampler        | Yes                        | Yes
-// RTV            | No                         | Yes
-// DSV            | No                         | Yes
-// 
-// 
-// 
-// How I previously handled descriptors:
-// 
-// Types:
-// - (GPU/Shader Visible) Descriptor Allocator
-// - (CPU Visible) Dynamic Descriptor Allocator
-// 
-// Variables:
-// - GlobalDescriptorAllocators (managed by the device)
-// - Dynamic Descriptor Allocators (managed by the command list)
-// --- Allows for descriptors to be staged before being committed to the 
-//     command list list. Dyn Desc need to be committed before a draw/dispatch
-// - Bound Descriptor Heaps (managed by the command list)
-// --- Reduce the number of heap binds per frame
-// 
-// I have to unwind this web of dependencies ... originally all per frame resources
-// were tied to a Command List
-// - Dynamic Descriptors
-// - GC Resources
-// - ResourceStateTracking (local state tracker - calls into a global tracker)
-// 
-// Global State that is called everywhere
-// - Resource State Tracking
-// - GPU Descriptor Allocator
-// 
-// Some things to think about
-// - When do we need to "write" into the Global Resource Tracker?
-// --- When does the command list does this?
-// - When do we create GPU Resources?
-// - When does the Command List write dynamic descriptors?
-// - Do Dynamic Descriptors write to the GPU Descriptors?
-// 
-//
-
 enum class gfx_buffer_type : u8
 {
 	byte_address,
@@ -143,6 +26,12 @@ enum class gfx_buffer_type : u8
 	index,
 	vertex,
 	max,
+};
+
+enum class triangle_root_parameter
+{
+	vertex_buffer = 0,
+	per_draw      = 1,
 };
 
 struct gfx_buffer
@@ -189,7 +78,9 @@ struct gfx_global
 	//gfx_material_storage       mMaterialStorage;
 
 	// Temporary
-	gfx_buffer          mVertexResource = {};
+	gfx_buffer         mVertexResource = {};
+	cpu_descriptor     mVertexSrv      = {}; // Ideally we wouldn't have a SRV for individual buffers?
+
 	gfx_buffer         mIndexResource  = {};
 
 	gfx_root_signature mSimpleSignature = {};
@@ -209,8 +100,8 @@ struct per_frame_cache
 
 struct vertex_draw_constants
 {
-	u32 uVertexOffset;
-	u32 uVertexBufferIndex;
+	u32 uVertexOffset      = 0;
+	u32 uVertexBufferIndex = 0;
 };
 
 constexpr  int              cMaxFrameCache                 = 5; // Keep up to 5 frames
@@ -384,10 +275,11 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 	//
 		
 	// Let's create a test resource
-	float Vertices[] = {
-		-0.5f, -0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		 0.0f,  0.5f, 0.0f
+	struct vertex { f32 Pos[2]; f32 Col[3]; };
+	vertex Vertices[] = {
+		{ .Pos = { -0.5f, -0.5f }, .Col = { 1.0f, 0.0f, 0.0f } },
+		{ .Pos = {  0.5f, -0.5f }, .Col = { 0.0f, 1.0f, 0.0f } },
+		{ .Pos = {  0.0f,  0.5f }, .Col = { 0.0f, 0.0f, 1.0f } },
 	};
 
 	u16 Indices[] = { 0, 1, 2 };
@@ -395,10 +287,21 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 	gfx_command_list* UploadList = gGlobal.mGraphicsQueue.GetCommandList();
 
 	gGlobal.mVertexResource = CreateByteAddressBuffer(UploadList, (void*)Vertices, 
-		ArrayCount(Vertices) / 3, sizeof(f32[3]));
+		ArrayCount(Vertices), sizeof(vertex));
+
+	{ // Create the SRV for the Byte Address Buffer - NOTE: Not needed actually!
+		D3D12_SHADER_RESOURCE_VIEW_DESC SrvDesc = {};
+		SrvDesc.ViewDimension           = D3D12_SRV_DIMENSION_BUFFER;
+		SrvDesc.Format                  = DXGI_FORMAT_R32_TYPELESS;
+		SrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		SrvDesc.Buffer.NumElements      = (UINT)sizeof(Vertices) / 4;
+		SrvDesc.Buffer.Flags            = D3D12_BUFFER_SRV_FLAG_RAW;
+
+		gGlobal.mVertexSrv = gGlobal.mStaticDescriptors[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV].Allocate(1);
+		gGlobal.mDevice.AsHandle()->CreateShaderResourceView(gGlobal.mVertexResource.mResource.AsHandle(), &SrvDesc, gGlobal.mVertexSrv.GetDescriptorHandle());
+	}
 
 	gGlobal.mIndexResource = CreateIndexBuffer(UploadList, Indices, 3, sizeof(Indices[0]));
-
 	gGlobal.mGraphicsQueue.ExecuteCommandLists(&UploadList);
 	gGlobal.mGraphicsQueue.Flush(); // Forcibly upload all of the geometry (for now)
 
@@ -416,8 +319,8 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 	RenderInfo.ResourceSystem.Load(resource_type::builtin_shader, "TestTriangle", &PixelShader);
 
 	{ // Create a simple root signature
-		gfx_root_descriptor VertexBuffers[]    = { { .mType = gfx_descriptor_type::srv                    } };
-		gfx_root_constant   PerDrawConstants[] = { { .mNum32bitValues = sizeof(vertex_draw_constants) / 4 } };
+		gfx_root_descriptor VertexBuffers[]    = { { .mRootIndex = u32(triangle_root_parameter::vertex_buffer), .mType = gfx_descriptor_type::srv } };
+		gfx_root_constant   PerDrawConstants[] = { { .mRootIndex = u32(triangle_root_parameter::per_draw), .mNum32bitValues = sizeof(vertex_draw_constants) / 4 } };
 		const char*         DebugName          = "Simple Root Signature";
 
 		gfx_root_signature_info Info = {};
@@ -476,8 +379,47 @@ SimpleRendererRender()
 	ToClearBarrier.AfterState  = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	List->TransitionBarrier(Backbuffer, ToClearBarrier);
 
-	f32 ClearColor[4] = { 1.0f, 0.0f, 1.0f, 1.0f };
+	f32 ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	List->AsHandle()->ClearRenderTargetView(SwapchainDescriptor.GetDescriptorHandle(), ClearColor, 0, nullptr);
+
+	// Set the render target (hardcode for now) 
+	D3D12_CPU_DESCRIPTOR_HANDLE RtHandles[] = { SwapchainDescriptor.GetDescriptorHandle() };
+	List->AsHandle()->OMSetRenderTargets(1, RtHandles, FALSE, nullptr);
+
+	// Scissor / Viewport
+	D3D12_RESOURCE_DESC BackbufferDesc = Backbuffer.GetResourceDesc();
+
+	D3D12_VIEWPORT Viewport = {
+		0.0f,                        // TopLeftX, Width  * Bias.x  (Bias.x == 0.0 by default)
+		0.0f,                        // TopLeftY, Height * Bias.y  (Bias.y == 0.0 by default)
+		f32(BackbufferDesc.Width),   // Width,    Width  * Scale.x (Scale.x == 1.0 by default)
+		f32(BackbufferDesc.Height),  // Height,   Height * Scale.y (Scale.y == 1.0 by default)
+		0.0f,                        // MinDepth
+		1.0f                         // MaxDepth
+	};
+	List->SetViewport(Viewport);
+
+	D3D12_RECT ScissorRect = {};
+	ScissorRect.left   = 0;
+	ScissorRect.top    = 0;
+	ScissorRect.right  = (LONG)Viewport.Width;
+	ScissorRect.bottom = (LONG)Viewport.Height;
+	List->SetScissorRect(ScissorRect);
+
+	// Draw some geomtry
+
+	List->SetPipelineState(gGlobal.mSimplePipeline);
+	List->SetGraphicsRootSignature(gGlobal.mSimpleSignature);
+
+	List->SetTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	List->SetIndexBuffer(gGlobal.mIndexResource.mIndexView);
+	List->SetShaderResourceViewInline(u32(triangle_root_parameter::vertex_buffer), gGlobal.mVertexResource.mResource.AsHandle());
+
+	vertex_draw_constants Constants = {};
+	List->SetGraphics32BitConstants(u32(triangle_root_parameter::per_draw), &Constants);
+
+	List->DrawIndexedInstanced((u32)gGlobal.mIndexResource.mIndexCount);
 
 	gfx_transition_barrier ToRenderBarrier = {};
 	ToRenderBarrier.BeforeState = D3D12_RESOURCE_STATE_RENDER_TARGET;

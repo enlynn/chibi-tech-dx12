@@ -6,6 +6,8 @@
 #include "d3d12_common.h"
 #include "gfx_device.h"
 #include "gfx_resource.h"
+#include "gfx_descriptor_allocator.h"
+#include "gfx_dynamic_descriptor_heap.h"
 
 #include <util/array.h>
 
@@ -34,7 +36,7 @@ class gfx_command_list
 {
 public:
 	gfx_command_list() = default;
-	explicit gfx_command_list(const gfx_device& Device, gfx_command_list_type Type);
+	explicit gfx_command_list(gfx_device& Device, gfx_command_list_type Type);
 
 	~gfx_command_list() { Release(); } // NOTE: I bet this will cause problems
 	void Release();
@@ -95,16 +97,46 @@ public:
 			NumSubresources, RequiredSize, Layouts, NumRows, RowSizesInBytes, SourceData);
     }
 
-
+	//Descriptor Binding
 	void SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, ID3D12DescriptorHeap* Heap);
 	void BindDescriptorHeaps();
+
+	// State Binding
+	void SetGraphicsRootSignature(const gfx_root_signature& RootSignature);
+	void SetScissorRect(D3D12_RECT& ScissorRect);
+	void SetScissorRects(farray<D3D12_RECT> ScissorRects);
+	void SetViewport(D3D12_VIEWPORT& Viewport);
+	void SetViewports(farray<D3D12_VIEWPORT> Viewports);
+	void SetPipelineState(const class gfx_pso& PipelineState);
+	void SetTopology(D3D12_PRIMITIVE_TOPOLOGY Topology);
+
+	// Buffer Binding
+	void SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW& IBView); // TODO(enlynn): Pass in a gfx_buffer
+
+	// Resource View Bindings
+	void SetShaderResourceView(u32 RootParameter, u32 DescriptorOffset, cpu_descriptor SRVDescriptor);
+	void SetShaderResourceViewInline(u32 RootParameter, ID3D12Resource* Buffer, u64 BufferOffset = 0);
+
+	void SetGraphics32BitConstants(u32 RootParameter, u32 NumConsants, void* Constants);
+	template<typename T> void SetGraphics32BitConstants(u32 RootParameter, T* Constants)
+	{
+		SetGraphics32BitConstants(RootParameter, sizeof(T) / 4, (void*)Constants);
+	}
+
+	// Draw Commands
+	void DrawInstanced(u32 VertexCountPerInstance, u32 InstanceCount = 1, u32 StartVertexLocation = 0, u32 StartInstanceLocation = 0);
+	void DrawIndexedInstanced(u32 IndexCountPerInstance, u32 InstanceCount = 1, u32 StartIndexLocation = 0, u32 StartVertexLocation = 0, u32 StartInstanceLocation = 0);
 
 private:
 	gfx_command_list_type             mType                                                       = gfx_command_list_type::none;
 	struct ID3D12GraphicsCommandList* mHandle                                                     = nullptr;
 	struct ID3D12CommandAllocator*    mAllocator                                                  = nullptr;
 
-	const gfx_device*                 mDevice                                                     = nullptr;
+	gfx_device*                       mDevice                                                     = nullptr;
 
 	ID3D12DescriptorHeap*             mBoundDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES] = {};
+	gfx_dynamic_descriptor_heap       mDynamicDescriptors[u32(dynamic_heap_type::max)]            = {};
+
+	ID3D12PipelineState*              mBoundPipeline                                              = nullptr;
+	ID3D12RootSignature*              mBoundRootSignature                                         = nullptr;
 };

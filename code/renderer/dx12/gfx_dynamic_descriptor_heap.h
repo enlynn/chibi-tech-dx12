@@ -24,15 +24,10 @@ enum class dynamic_heap_type : u8
     max,
 };
 
-struct gpu_descriptor_allocation
-{
-    // TODO:
-    D3D12_GPU_DESCRIPTOR_HANDLE GpuHandle = {};
-};
-
 class gfx_dynamic_descriptor_heap
 {
 public:
+    gfx_dynamic_descriptor_heap() = default;
     gfx_dynamic_descriptor_heap(gfx_device* Device, const allocator& Allocator, dynamic_heap_type Type, u32 CountPerHeap = 1024);
     void Deinit();
 
@@ -76,6 +71,11 @@ public:
     // has finished executing on the command queue
     void Reset();
 
+    // Stage inline descriptors
+    void StageInlineCBV(u32 RootIndex, D3D12_GPU_VIRTUAL_ADDRESS GpuDescriptorHandle);
+    void StageInlineSRV(u32 RootIndex, D3D12_GPU_VIRTUAL_ADDRESS GpuDescriptorHandle);
+    void StageInlineUAV(u32 RootIndex, D3D12_GPU_VIRTUAL_ADDRESS GpuDescriptorHandle);
+
 private:
     // Updates the current heap if the active heap is not large enough for the number of descriptors needed to commit
     void                  UpdateCurrentHeap(gfx_command_list* CommandList, u32 NumDescriptorsToCommit);
@@ -83,11 +83,6 @@ private:
     ID3D12DescriptorHeap* RequestDescriptorHeap();
     // Compute the number of stale descriptors that need to be copied to the GPU visible descriptor heap
     u32 ComputeStaleDescriptorTableCount();
-
-    // Stage inline descriptors
-    void StageInlineCBV(u32 RootIndex, D3D12_GPU_VIRTUAL_ADDRESS GpuDescriptorHandle);
-    void StageInlineSRV(u32 RootIndex, D3D12_GPU_VIRTUAL_ADDRESS GpuDescriptorHandle);
-    void StageInlineUAV(u32 RootIndex, D3D12_GPU_VIRTUAL_ADDRESS GpuDescriptorHandle);
 
     static const u8 cMaxDescriptorTables  = 64; // A Descriptor Table is 1 DWORD, and a Root Signature can hold up to 64 Tables
     static const u8 cMaxInlineDescriptors = 32; // An Inline Descriptor is 2 DWORD, and a Root Signature can hold up to 32 Inline Descriptors

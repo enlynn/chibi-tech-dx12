@@ -1,5 +1,8 @@
 #include "gfx_command_list.h"
 
+#include "gfx_pso.h"
+#include "gfx_root_signature.h"
+
 #include <platform/platform.h>
 
 inline void 
@@ -71,7 +74,7 @@ D3D12_COMMAND_LIST_TYPE_NONE = -1
 	}
 }
 
-gfx_command_list::gfx_command_list(const gfx_device& Device, gfx_command_list_type Type)
+gfx_command_list::gfx_command_list(gfx_device& Device, gfx_command_list_type Type)
 	: mType(Type)
 	, mDevice(&Device)
 {
@@ -82,10 +85,21 @@ gfx_command_list::gfx_command_list(const gfx_device& Device, gfx_command_list_ty
 
 	// A command list is created in the recording state, but since the Command Queue is responsible for fetching
 	// a command list, it is ok for the list to stay in this state.
+
+	ForRange(int, i, u32(dynamic_heap_type::max))
+	{
+		const allocator TempAllocator = allocator::Default();
+		mDynamicDescriptors[i] = gfx_dynamic_descriptor_heap(&Device, TempAllocator, dynamic_heap_type(i), 1024);
+	}
 }
 
 void gfx_command_list::Release()
 {
+	ForRange(int, i, u32(dynamic_heap_type::max))
+	{
+		mDynamicDescriptors[i].Deinit();
+	}
+
 	if (mAllocator)
 		ComSafeRelease(mAllocator);
 	if (mHandle)
@@ -96,6 +110,14 @@ void gfx_command_list::Reset()
 {
 	AssertHr(mAllocator->Reset());
 	AssertHr(mHandle->Reset(mAllocator, nullptr));
+
+	ForRange(int, i, u32(dynamic_heap_type::max))
+	{
+		mDynamicDescriptors[i].Reset();
+	}
+
+	mBoundPipeline      = nullptr;
+	mBoundRootSignature = nullptr;
 }
 
 void gfx_command_list::Close()
@@ -262,4 +284,118 @@ gfx_command_list::BindDescriptorHeaps()
 	}
 
 	mHandle->SetDescriptorHeaps(NumHeaps, HeapsToBind);
+}
+
+void gfx_command_list::SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW& IBView)
+{
+	//TransitionBarrier(indexBuffer->GetResource(), D3D12_RESOURCE_STATE_INDEX_BUFFER);
+	mHandle->IASetIndexBuffer(&IBView);
+}
+
+void
+gfx_command_list::SetGraphics32BitConstants(u32 RootParameter, u32 NumConsants, void* Constants)
+{
+	mHandle->SetGraphicsRoot32BitConstants(RootParameter, NumConsants, Constants, 0);
+}
+
+// Set the SRV on the graphics pipeline.
+void
+gfx_command_list::SetShaderResourceView(u32 RootParameter, u32 DescriptorOffset, cpu_descriptor SRVDescriptor)
+{
+	// TODO(enlynn): Verify the resource is in the correct final state
+	mDynamicDescriptors[u32(dynamic_heap_type::buffer)].StageDescriptors(RootParameter, DescriptorOffset, 1, SRVDescriptor.GetDescriptorHandle());
+}
+
+void
+gfx_command_list::SetShaderResourceViewInline(u32 RootParameter, ID3D12Resource* Buffer, u64 BufferOffset)
+{
+	if (Buffer)
+	{
+		mDynamicDescriptors[u32(dynamic_heap_type::buffer)].StageInlineSRV(RootParameter, Buffer->GetGPUVirtualAddress() + BufferOffset);
+	}
+}
+
+void gfx_command_list::SetGraphicsRootSignature(const gfx_root_signature& RootSignature)
+{
+	ID3D12RootSignature* RootHandle = RootSignature.AsHandle();
+	if (mBoundRootSignature != RootHandle)
+	{
+		mBoundRootSignature = RootHandle;
+
+		ForRange(int, i, u32(dynamic_heap_type::max))
+		{
+			mDynamicDescriptors[i].ParseRootSignature(RootSignature);
+		}
+
+		mHandle->SetGraphicsRootSignature(mBoundRootSignature);
+	}
+}
+
+void
+gfx_command_list::SetScissorRect(D3D12_RECT& ScissorRect)
+{
+	SetScissorRects(farray(&ScissorRect, 1));
+}
+
+void
+gfx_command_list::SetScissorRects(farray<D3D12_RECT> ScissorRects)
+{
+	assert(ScissorRects.Length() < D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
+	mHandle->RSSetScissorRects((UINT)ScissorRects.Length(), ScissorRects.Ptr());
+}
+
+void
+gfx_command_list::SetViewport(D3D12_VIEWPORT& Viewport)
+{
+	SetViewports(farray(&Viewport, 1));
+}
+
+void
+gfx_command_list::SetViewports(farray<D3D12_VIEWPORT> Viewports)
+{
+	assert(Viewports.Length() < D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
+	mHandle->RSSetViewports((UINT)Viewports.Length(), Viewports.Ptr());
+}
+
+void
+gfx_command_list::SetPipelineState(const gfx_pso& PipelineState)
+{
+	if (mBoundPipeline != PipelineState.AsHandle())
+	{
+		mBoundPipeline = PipelineState.AsHandle();
+		mHandle->SetPipelineState(mBoundPipeline);
+	}
+}
+
+void
+gfx_command_list::SetTopology(D3D12_PRIMITIVE_TOPOLOGY Topology)
+{
+	mHandle->IASetPrimitiveTopology(Topology);
+}
+
+void
+gfx_command_list::DrawInstanced(u32 VertexCountPerInstance, u32 InstanceCount, u32 StartVertexLocation, u32 StartInstanceLocation)
+{
+	//FlushResourceBarriers();
+
+	ForRange (int, i, u32(dynamic_heap_type::max))
+	{
+		mDynamicDescriptors[i].CommitStagedDescriptorsForDraw(this);
+	}
+
+	mHandle->DrawInstanced(VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation);
+}
+
+
+void
+gfx_command_list::DrawIndexedInstanced(u32 IndexCountPerInstance, u32 InstanceCount, u32 StartIndexLocation, u32 StartVertexLocation, u32 StartInstanceLocation)
+{
+	//FlushResourceBarriers();
+
+	ForRange(int, i, u32(dynamic_heap_type::max))
+	{
+		mDynamicDescriptors[i].CommitStagedDescriptorsForDraw(this);
+	}
+
+	mHandle->DrawIndexedInstanced(IndexCountPerInstance, InstanceCount, StartIndexLocation, StartVertexLocation, StartInstanceLocation);
 }
