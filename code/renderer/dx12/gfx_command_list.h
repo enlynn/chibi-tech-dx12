@@ -95,10 +95,16 @@ public:
 			NumSubresources, RequiredSize, Layouts, NumRows, RowSizesInBytes, SourceData);
     }
 
-private:
-	gfx_command_list_type             mType      = gfx_command_list_type::none;
-	struct ID3D12GraphicsCommandList* mHandle    = nullptr;
-	struct ID3D12CommandAllocator*    mAllocator = nullptr;
 
-	const gfx_device*                 mDevice    = nullptr;
+	void SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, ID3D12DescriptorHeap* Heap);
+	void BindDescriptorHeaps();
+
+private:
+	gfx_command_list_type             mType                                                       = gfx_command_list_type::none;
+	struct ID3D12GraphicsCommandList* mHandle                                                     = nullptr;
+	struct ID3D12CommandAllocator*    mAllocator                                                  = nullptr;
+
+	const gfx_device*                 mDevice                                                     = nullptr;
+
+	ID3D12DescriptorHeap*             mBoundDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES] = {};
 };

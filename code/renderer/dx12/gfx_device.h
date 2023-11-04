@@ -2,8 +2,7 @@
 
 #include <types.h>
 
-struct ID3D12Device;
-struct IDXGIAdapter1;
+#include "d3d12_common.h"
 
 class gfx_device
 {
@@ -19,6 +18,8 @@ public:
 	// Cast to the internal ID3D12Device handle
 	constexpr ID3D12Device*  AsHandle()  const { return mDevice;  }
 	constexpr IDXGIAdapter1* AsAdapter() const { return mAdapter; }
+
+	ID3D12DescriptorHeap* CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 Count, bool IsShaderVisible);
 
 private:
 	ID3D12Device*  mDevice                = nullptr;

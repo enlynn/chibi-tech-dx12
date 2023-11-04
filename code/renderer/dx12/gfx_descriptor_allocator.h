@@ -29,7 +29,7 @@ class cpu_descriptor_page
 public:
 	cpu_descriptor_page() = default;
 	
-	void Init(const gfx_device& Device, const allocator& Allocator, D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 MaxDescriptors);
+	void Init(gfx_device& Device, const allocator& Allocator, D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 MaxDescriptors);
 	void Deinit();
 
 	cpu_descriptor Allocate(u32 Count = 1);

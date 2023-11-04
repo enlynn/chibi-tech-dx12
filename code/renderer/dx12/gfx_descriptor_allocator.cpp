@@ -12,7 +12,7 @@ cpu_descriptor::GetDescriptorHandle(u32 Offset) const
 }
 
 void 
-cpu_descriptor_page::Init(const gfx_device& Device, const allocator& Allocator, D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 MaxDescriptors)
+cpu_descriptor_page::Init(gfx_device& Device, const allocator& Allocator, D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 MaxDescriptors)
 {
 	auto DeviceHandle = Device.AsHandle();
 
@@ -22,10 +22,7 @@ cpu_descriptor_page::Init(const gfx_device& Device, const allocator& Allocator, 
 
 	mFreeDescriptors = darray<free_descriptor_block>(mAllocator, 10);
 
-	D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {};
-	HeapDesc.Type           = mType;
-	HeapDesc.NumDescriptors = mTotalDescriptors;
-	AssertHr(DeviceHandle->CreateDescriptorHeap(&HeapDesc, ComCast(&mHeap)));
+	mHeap = Device.CreateDescriptorHeap(mType, mTotalDescriptors, false);
 
 	mBaseDescriptor   = mHeap->GetCPUDescriptorHandleForHeapStart();
 	mDescriptorStride = DeviceHandle->GetDescriptorHandleIncrementSize(mType);

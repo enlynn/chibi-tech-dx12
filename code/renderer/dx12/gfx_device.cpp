@@ -167,3 +167,17 @@ gfx_device::SelectAdapter()
 
 	ComSafeRelease(Factory6);
 }
+
+ID3D12DescriptorHeap* 
+gfx_device::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 Count, bool IsShaderVisible)
+{
+	ID3D12DescriptorHeap* Result = nullptr;
+
+	D3D12_DESCRIPTOR_HEAP_DESC Desc = {};
+	Desc.Type                       = Type;
+	Desc.NumDescriptors             = Count;
+	Desc.Flags                      = (IsShaderVisible) ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	AssertHr(mDevice->CreateDescriptorHeap(&Desc, ComCast(&Result)));
+
+	return Result;
+}

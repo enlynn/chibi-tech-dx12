@@ -48,7 +48,7 @@ set(RENDERER
 	"code/renderer/dx12/gfx_resource.h"                     "code/renderer/dx12/gfx_resource.cpp" 
 	"code/renderer/dx12/gfx_utils.h"                        "code/renderer/dx12/gfx_utils.cpp" 
 	"code/renderer/dx12/gfx_descriptor_allocator.h"         "code/renderer/dx12/gfx_descriptor_allocator.cpp"
-	"code/renderer/dx12/gfx_dynamic_descriptor_allocator.h" "code/renderer/dx12/gfx_dynamic_descriptor_allocator.cpp" 
+	"code/renderer/dx12/gfx_dynamic_descriptor_heap.h" "code/renderer/dx12/gfx_dynamic_descriptor_heap.cpp" 
 	"code/renderer/dx12/gfx_root_signature.h"               "code/renderer/dx12/gfx_root_signature.cpp"
 	"code/renderer/dx12/gfx_pso.h"                          "code/renderer/dx12/gfx_pso.cpp"
  "code/renderer/dx12/gfx_shader_utils.h" "code/renderer/dx12/gfx_shader_utils.cpp")

@@ -235,3 +235,31 @@ gfx_command_list::UpdateSubresources(
 	}
 	return RequiredSize;
 }
+
+void 
+gfx_command_list::SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, ID3D12DescriptorHeap* Heap)
+{
+	if (mBoundDescriptorHeaps[Type] != Heap)
+	{
+		mBoundDescriptorHeaps[Type] = Heap;
+		BindDescriptorHeaps();
+	}
+}
+
+void
+gfx_command_list::BindDescriptorHeaps()
+{
+	UINT                  NumHeaps                                          = 0;
+	ID3D12DescriptorHeap* HeapsToBind[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES] = {};
+
+	ForRange(int, i, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES)
+	{
+		if (mBoundDescriptorHeaps[i] != nullptr)
+		{
+			HeapsToBind[NumHeaps] = mBoundDescriptorHeaps[i];
+			NumHeaps             += 1;
+		}
+	}
+
+	mHandle->SetDescriptorHeaps(NumHeaps, HeapsToBind);
+}

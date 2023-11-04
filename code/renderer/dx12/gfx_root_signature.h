@@ -143,24 +143,27 @@ public:
 	gfx_root_signature() = default;
     gfx_root_signature(const gfx_device& Device, const gfx_root_signature_info& Info);
 
-    u32 GetDescriptorTableBitmask(gfx_descriptor_type HeapType);
-    u32 GetNumDescriptors(u32 RootIndex);
+    u32 GetDescriptorTableBitmask(gfx_descriptor_type HeapType) const;
+    u32 GetNumDescriptors(u32 RootIndex)                        const;
+    u32 GetRootParameterCount()                                 const { return mRootParameterCount; }
 
     struct ID3D12RootSignature* AsHandle() const { return mHandle; }
 
     void Release() { if (mHandle) ComSafeRelease(mHandle); }
 
 private:
-	struct ID3D12RootSignature* mHandle                    = 0;
+	struct ID3D12RootSignature* mHandle                     = 0;
+    // Total number of root parameters in the root signature
+    u32                         mRootParameterCount         = 0;
     // Need to know number of descriptors per table
     //  A maximum of 32 descriptor tables are supported
-    u32                        mNumDescriptorsPerTable[32] = {};
+    u32                         mNumDescriptorsPerTable[32] = {};
     // A bitmask that represents the root parameter indices that 
     // are descriptor tables for Samplers
-    u32                        mSamplerTableBitmask        = 0;
+    u32                         mSamplerTableBitmask        = 0;
     // A bitmask that represents the root parameter indices
     // that are CBV/UAV/SRV descriptor tables
-    u32                        mDescriptorTableBitmask     = 0;
+    u32                         mDescriptorTableBitmask     = 0;
 
     // RootSignature is limited by the number of "bindings" it can have. The upper
     // bound is 64 DWords (64 * 4 bytes).

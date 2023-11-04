@@ -245,10 +245,12 @@ gfx_root_signature::gfx_root_signature(const gfx_device& Device, const gfx_root_
 #if defined(DEBUG_BUILD)
     //mHandle->SetName(Info.Name.Ptr()); <- Str8 to Str16 conversion
 #endif
+
+    mRootParameterCount = ParameterCount;
 }
 
 u32 
-gfx_root_signature::GetDescriptorTableBitmask(gfx_descriptor_type HeapType)
+gfx_root_signature::GetDescriptorTableBitmask(gfx_descriptor_type HeapType) const
 {
     u32 Result = 0;
     switch (HeapType)
@@ -262,7 +264,7 @@ gfx_root_signature::GetDescriptorTableBitmask(gfx_descriptor_type HeapType)
 }
 
 u32 
-gfx_root_signature::GetNumDescriptors(u32 RootIndex)
+gfx_root_signature::GetNumDescriptors(u32 RootIndex) const
 {
     assert(RootIndex < 32);
     return mNumDescriptorsPerTable[RootIndex];
