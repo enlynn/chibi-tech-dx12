@@ -1,8 +1,8 @@
-#include "gfx_dynamic_descriptor_heap.h"
+#include "gpu_dynamic_descriptor_heap.h"
 
-#include "gfx_command_list.h"
-#include "gfx_device.h"
-#include "gfx_root_signature.h"
+#include "gpu_command_list.h"
+#include "gpu_device.h"
+#include "gpu_root_signature.h"
 
 #include <util/bit.h>
 
@@ -54,7 +54,7 @@ SetComputeRootUAVWrapper(ID3D12GraphicsCommandList* CommandList, UINT RootIndex,
 	CommandList->SetComputeRootUnorderedAccessView(RootIndex, GpuDescriptorHandle);
 }
 
-gfx_dynamic_descriptor_heap::gfx_dynamic_descriptor_heap(gfx_device* Device, const allocator& Allocator, dynamic_heap_type Type, u32 CountPerHeap)
+gpu_dynamic_descriptor_heap::gpu_dynamic_descriptor_heap(gpu_device* Device, const allocator& Allocator, dynamic_heap_type Type, u32 CountPerHeap)
 {
 	mDevice             = Device;
 	mAllocator          = Allocator.Clone();
@@ -72,7 +72,7 @@ gfx_dynamic_descriptor_heap::gfx_dynamic_descriptor_heap(gfx_device* Device, con
 }
 
 void 
-gfx_dynamic_descriptor_heap::Deinit()
+gpu_dynamic_descriptor_heap::Deinit()
 {
 	mAllocator.FreeArray(mCpuHandleCache, mDescriptorsPerHeap);
 	mCpuHandleCache = nullptr;
@@ -85,7 +85,7 @@ gfx_dynamic_descriptor_heap::Deinit()
 }
 
 void
-gfx_dynamic_descriptor_heap::Reset()
+gpu_dynamic_descriptor_heap::Reset()
 {
 	mNextAvailableHeap            = 0;
 	mCurrentHeap                  = nullptr;
@@ -114,7 +114,7 @@ gfx_dynamic_descriptor_heap::Reset()
 }
 
 void
-gfx_dynamic_descriptor_heap::ParseRootSignature(const gfx_root_signature& RootSignature)
+gpu_dynamic_descriptor_heap::ParseRootSignature(const gpu_root_signature& RootSignature)
 {
 	const u32 RootParameterCount = RootSignature.GetRootParameterCount();
 
@@ -122,7 +122,7 @@ gfx_dynamic_descriptor_heap::ParseRootSignature(const gfx_root_signature& RootSi
 	mStaleDescriptorTableBitmask = 0;
 
 	// Update the Descriptor Table Mask
-	mCachedDescriptorTableBitmask = RootSignature.GetDescriptorTableBitmask(gfx_descriptor_type::cbv);
+	mCachedDescriptorTableBitmask = RootSignature.GetDescriptorTableBitmask(gpu_descriptor_type::cbv);
 	u64 TableBitmask              = mCachedDescriptorTableBitmask;
 
 	u32 CurrentDescriptorOffset = 0;
@@ -146,7 +146,7 @@ gfx_dynamic_descriptor_heap::ParseRootSignature(const gfx_root_signature& RootSi
 }
 
 void 
-gfx_dynamic_descriptor_heap::StageDescriptors(u32 RootParameterIndex, u32 DescriptorOffset, u32 NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE CpuDescriptorHandle)
+gpu_dynamic_descriptor_heap::StageDescriptors(u32 RootParameterIndex, u32 DescriptorOffset, u32 NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE CpuDescriptorHandle)
 {
 	// Cannot stage more than the maximum number od descriptors per heap
 	// Cannot stage more than MaxDescriptorTables root params
@@ -168,7 +168,7 @@ gfx_dynamic_descriptor_heap::StageDescriptors(u32 RootParameterIndex, u32 Descri
 }
 
 void 
-gfx_dynamic_descriptor_heap::CommitDescriptorTables(gfx_command_list* CommandList, commit_descriptor_table_pfn CommitTablesPFN)
+gpu_dynamic_descriptor_heap::CommitDescriptorTables(gpu_command_list* CommandList, commit_descriptor_table_pfn CommitTablesPFN)
 {
 	// Compute the number of descriptors that need to be updated 
 	u32 NumDescriptorsToCommit = ComputeStaleDescriptorTableCount();
@@ -207,8 +207,8 @@ gfx_dynamic_descriptor_heap::CommitDescriptorTables(gfx_command_list* CommandLis
 }
 
 void 
-gfx_dynamic_descriptor_heap::CommitInlineDescriptors(
-	gfx_command_list*            CommandList,
+gpu_dynamic_descriptor_heap::CommitInlineDescriptors(
+	gpu_command_list*            CommandList,
 	D3D12_GPU_VIRTUAL_ADDRESS*   GpuDescriptorHandles,
 	u32*                         DescriptorBitmask,
 	commit_descriptor_inline_pfn CommitInlinePFN)
@@ -228,7 +228,7 @@ gfx_dynamic_descriptor_heap::CommitInlineDescriptors(
 }
 
 void 
-gfx_dynamic_descriptor_heap::CommitStagedDescriptorsForDraw(gfx_command_list* CommandList)
+gpu_dynamic_descriptor_heap::CommitStagedDescriptorsForDraw(gpu_command_list* CommandList)
 {
 	CommitDescriptorTables (CommandList,                                &SetRootDescriptorGraphicsWrapper);
 	CommitInlineDescriptors(CommandList, mInlineCbv, &mStaleCbvBitmask, &SetGraphicsRootCBVWrapper);
@@ -237,7 +237,7 @@ gfx_dynamic_descriptor_heap::CommitStagedDescriptorsForDraw(gfx_command_list* Co
 }
 
 void 
-gfx_dynamic_descriptor_heap::CommitStagedDescriptorsForDispatch(gfx_command_list* CommandList)
+gpu_dynamic_descriptor_heap::CommitStagedDescriptorsForDispatch(gpu_command_list* CommandList)
 {
 	CommitDescriptorTables (CommandList,                                &SetRootDescriptorGraphicsWrapper);
 	CommitInlineDescriptors(CommandList, mInlineCbv, &mStaleCbvBitmask, &SetComputeRootCBVWrapper);
@@ -246,7 +246,7 @@ gfx_dynamic_descriptor_heap::CommitStagedDescriptorsForDispatch(gfx_command_list
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE 
-gfx_dynamic_descriptor_heap::CopyDescriptor(gfx_command_list* CommandList, D3D12_CPU_DESCRIPTOR_HANDLE CpuDescriptorHandle)
+gpu_dynamic_descriptor_heap::CopyDescriptor(gpu_command_list* CommandList, D3D12_CPU_DESCRIPTOR_HANDLE CpuDescriptorHandle)
 {
 	const u32 DescriptorsToUpdate = 1;
 
@@ -267,7 +267,7 @@ gfx_dynamic_descriptor_heap::CopyDescriptor(gfx_command_list* CommandList, D3D12
 }
 
 void
-gfx_dynamic_descriptor_heap::UpdateCurrentHeap(gfx_command_list* CommandList, u32 NumDescriptorsToCommit)
+gpu_dynamic_descriptor_heap::UpdateCurrentHeap(gpu_command_list* CommandList, u32 NumDescriptorsToCommit)
 {
 	if (!mCurrentHeap || mNumFreeHandles < NumDescriptorsToCommit)
 	{
@@ -287,7 +287,7 @@ gfx_dynamic_descriptor_heap::UpdateCurrentHeap(gfx_command_list* CommandList, u3
 }
 
 ID3D12DescriptorHeap* 
-gfx_dynamic_descriptor_heap::RequestDescriptorHeap()
+gpu_dynamic_descriptor_heap::RequestDescriptorHeap()
 {
 	ID3D12DescriptorHeap* Result = 0;
 
@@ -306,7 +306,7 @@ gfx_dynamic_descriptor_heap::RequestDescriptorHeap()
 }
 
 u32 
-gfx_dynamic_descriptor_heap::ComputeStaleDescriptorTableCount()
+gpu_dynamic_descriptor_heap::ComputeStaleDescriptorTableCount()
 {
 	u32 StaleDescriptorCount = 0;
 	
@@ -325,7 +325,7 @@ gfx_dynamic_descriptor_heap::ComputeStaleDescriptorTableCount()
 
 // Stage inline descriptors
 void 
-gfx_dynamic_descriptor_heap::StageInlineCBV(u32 RootIndex, D3D12_GPU_VIRTUAL_ADDRESS GpuDescriptorHandle)
+gpu_dynamic_descriptor_heap::StageInlineCBV(u32 RootIndex, D3D12_GPU_VIRTUAL_ADDRESS GpuDescriptorHandle)
 {
 	assert(RootIndex < cMaxInlineDescriptors);
 	mInlineCbv[RootIndex] = GpuDescriptorHandle;
@@ -333,7 +333,7 @@ gfx_dynamic_descriptor_heap::StageInlineCBV(u32 RootIndex, D3D12_GPU_VIRTUAL_ADD
 }
 
 void 
-gfx_dynamic_descriptor_heap::StageInlineSRV(u32 RootIndex, D3D12_GPU_VIRTUAL_ADDRESS GpuDescriptorHandle)
+gpu_dynamic_descriptor_heap::StageInlineSRV(u32 RootIndex, D3D12_GPU_VIRTUAL_ADDRESS GpuDescriptorHandle)
 {
 	assert(RootIndex < cMaxInlineDescriptors);
 	mInlineSrv[RootIndex] = GpuDescriptorHandle;
@@ -341,7 +341,7 @@ gfx_dynamic_descriptor_heap::StageInlineSRV(u32 RootIndex, D3D12_GPU_VIRTUAL_ADD
 }
 
 void 
-gfx_dynamic_descriptor_heap::StageInlineUAV(u32 RootIndex, D3D12_GPU_VIRTUAL_ADDRESS GpuDescriptorHandle)
+gpu_dynamic_descriptor_heap::StageInlineUAV(u32 RootIndex, D3D12_GPU_VIRTUAL_ADDRESS GpuDescriptorHandle)
 {
 	assert(RootIndex < cMaxInlineDescriptors);
 	mInlineUav[RootIndex] = GpuDescriptorHandle;

@@ -4,17 +4,17 @@
 
 #include "d3d12/d3d12.h"
 #include "d3d12_common.h"
-#include "gfx_device.h"
-#include "gfx_resource.h"
-#include "gfx_descriptor_allocator.h"
-#include "gfx_dynamic_descriptor_heap.h"
+#include "gpu_device.h"
+#include "gpu_resource.h"
+#include "gpu_descriptor_allocator.h"
+#include "gpu_dynamic_descriptor_heap.h"
 
 #include <util/array.h>
 
-class gfx_device;
-class gfx_resource;
+class gpu_device;
+class gpu_resource;
 
-enum class gfx_command_list_type : u8
+enum class gpu_command_list_type : u8
 {
 	none,     //error state
 	graphics, //standard graphics command list
@@ -24,7 +24,7 @@ enum class gfx_command_list_type : u8
 	count,
 };
 
-struct gfx_transition_barrier
+struct gpu_transition_barrier
 {
 	D3D12_RESOURCE_STATES BeforeState  = D3D12_RESOURCE_STATE_COMMON;
 	D3D12_RESOURCE_STATES AfterState   = D3D12_RESOURCE_STATE_COMMON;
@@ -32,16 +32,16 @@ struct gfx_transition_barrier
 	u32                   Subresources = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 };
 
-class gfx_command_list
+class gpu_command_list
 {
 public:
-	gfx_command_list() = default;
-	explicit gfx_command_list(gfx_device& Device, gfx_command_list_type Type);
+	gpu_command_list() = default;
+	explicit gpu_command_list(gpu_device& Device, gpu_command_list_type Type);
 
-	~gfx_command_list() { Release(); } // NOTE: I bet this will cause problems
+	~gpu_command_list() { Release(); } // NOTE: I bet this will cause problems
 	void Release();
 
-	inline gfx_command_list_type             GetType()  const { return mType;   }
+	inline gpu_command_list_type             GetType()  const { return mType;   }
 	inline struct ID3D12GraphicsCommandList* AsHandle() const { return mHandle; }
 
 	void Reset();
@@ -49,15 +49,15 @@ public:
 	void Close();
 
 	// Texture Handling
-	void ClearTexture(const gfx_resource& TextureResource, f32 ClearColor[4]);
+	void ClearTexture(const gpu_resource& TextureResource, f32 ClearColor[4]);
 
 	// For now, assume all subresources should be 
-	void TransitionBarrier(const gfx_resource& Resource, const gfx_transition_barrier& Barrier);
+	void TransitionBarrier(const gpu_resource& Resource, const gpu_transition_barrier& Barrier);
 
 	// Requires GetCopyableFootprints to be called before passing paramters to this function
 	u64 UpdateSubresources(
-		const gfx_resource&                        DestinationResource,
-		const gfx_resource&                        IntermediateResource,
+		const gpu_resource&                        DestinationResource,
+		const gpu_resource&                        IntermediateResource,
 		u32                                        FirstSubresource,   // Range = (0,D3D12_REQ_SUBRESOURCES)
 		u32                                        NumSubresources,    // Range = (0,D3D12_REQ_SUBRESOURCES-FirstSubresource)
 		u64                                        RequiredSize,
@@ -77,8 +77,8 @@ public:
 	// These two functions stack allocate these arrays, so avoid using D3D12_REQ_SUBRESOURCES as the upper bound.
 	template <u32 MaxSubresources>
     u64 UpdateSubresources(
-		const gfx_resource&            DestinationResource,
-		const gfx_resource&            IntermediateResource,
+		const gpu_resource&            DestinationResource,
+		const gpu_resource&            IntermediateResource,
 		u64                            IntermediateOffset,
 		u32                            FirstSubresource,   // Range (0, MaxSubresources)
 		u32                            NumSubresources,    // Range (1, MaxSubresources - FirstSubresource)
@@ -102,16 +102,16 @@ public:
 	void BindDescriptorHeaps();
 
 	// State Binding
-	void SetGraphicsRootSignature(const gfx_root_signature& RootSignature);
+	void SetGraphicsRootSignature(const gpu_root_signature& RootSignature);
 	void SetScissorRect(D3D12_RECT& ScissorRect);
 	void SetScissorRects(farray<D3D12_RECT> ScissorRects);
 	void SetViewport(D3D12_VIEWPORT& Viewport);
 	void SetViewports(farray<D3D12_VIEWPORT> Viewports);
-	void SetPipelineState(const class gfx_pso& PipelineState);
+	void SetPipelineState(const class gpu_pso& PipelineState);
 	void SetTopology(D3D12_PRIMITIVE_TOPOLOGY Topology);
 
 	// Buffer Binding
-	void SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW& IBView); // TODO(enlynn): Pass in a gfx_buffer
+	void SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW& IBView); // TODO(enlynn): Pass in a gpu_buffer
 
 	// Resource View Bindings
 	void SetShaderResourceView(u32 RootParameter, u32 DescriptorOffset, cpu_descriptor SRVDescriptor);
@@ -128,14 +128,14 @@ public:
 	void DrawIndexedInstanced(u32 IndexCountPerInstance, u32 InstanceCount = 1, u32 StartIndexLocation = 0, u32 StartVertexLocation = 0, u32 StartInstanceLocation = 0);
 
 private:
-	gfx_command_list_type             mType                                                       = gfx_command_list_type::none;
+	gpu_command_list_type             mType                                                       = gpu_command_list_type::none;
 	struct ID3D12GraphicsCommandList* mHandle                                                     = nullptr;
 	struct ID3D12CommandAllocator*    mAllocator                                                  = nullptr;
 
-	gfx_device*                       mDevice                                                     = nullptr;
+	gpu_device*                       mDevice                                                     = nullptr;
 
 	ID3D12DescriptorHeap*             mBoundDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES] = {};
-	gfx_dynamic_descriptor_heap       mDynamicDescriptors[u32(dynamic_heap_type::max)]            = {};
+	gpu_dynamic_descriptor_heap       mDynamicDescriptors[u32(dynamic_heap_type::max)]            = {};
 
 	ID3D12PipelineState*              mBoundPipeline                                              = nullptr;
 	ID3D12RootSignature*              mBoundRootSignature                                         = nullptr;

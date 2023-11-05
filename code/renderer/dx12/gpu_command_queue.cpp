@@ -1,12 +1,12 @@
 #include "d3d12_common.h"
-#include "gfx_command_queue.h"
-#include "gfx_device.h"
+#include "gpu_command_queue.h"
+#include "gpu_device.h"
 
 #include <util/allocator.h>
 #include <util/array.h>
 
 fn_inline D3D12_COMMAND_LIST_TYPE 
-GetD3D12CommandListType(gfx_command_queue_type Type)
+GetD3D12CommandListType(gpu_command_queue_type Type)
 {
 #if 0
 D3D12_COMMAND_LIST_TYPE_DIRECT
@@ -21,14 +21,14 @@ D3D12_COMMAND_LIST_TYPE_NONE
 
 	switch (Type)
 	{
-		case gfx_command_queue_type::graphics: return D3D12_COMMAND_LIST_TYPE_DIRECT;
-		case gfx_command_queue_type::compute:  return D3D12_COMMAND_LIST_TYPE_COMPUTE;
-		case gfx_command_queue_type::copy:     return D3D12_COMMAND_LIST_TYPE_COPY;
+		case gpu_command_queue_type::graphics: return D3D12_COMMAND_LIST_TYPE_DIRECT;
+		case gpu_command_queue_type::compute:  return D3D12_COMMAND_LIST_TYPE_COMPUTE;
+		case gpu_command_queue_type::copy:     return D3D12_COMMAND_LIST_TYPE_COPY;
 		default:                               return D3D12_COMMAND_LIST_TYPE_NONE;
 	}
 }
 
-gfx_command_queue::gfx_command_queue(const allocator& Allocator, gfx_command_queue_type Type, gfx_device* Device)
+gpu_command_queue::gpu_command_queue(const allocator& Allocator, gpu_command_queue_type Type, gpu_device* Device)
 	: mDevice(Device)
 	, mAllocator(Allocator)
 	, mType(Type)
@@ -41,16 +41,16 @@ gfx_command_queue::gfx_command_queue(const allocator& Allocator, gfx_command_que
 
 	AssertHr(mDevice->AsHandle()->CreateFence(mFenceValue, D3D12_FENCE_FLAG_NONE, ComCast(&mQueueFence)));
 
-	ForRange(u32, i, u32(gfx_command_list_type::count))
+	ForRange(u32, i, u32(gpu_command_list_type::count))
 	{
-		mAvailableFlightCommandLists[i] = darray<gfx_command_list*>(mAllocator, 5);
+		mAvailableFlightCommandLists[i] = darray<gpu_command_list*>(mAllocator, 5);
 	}
 
 	mInFlightCommandLists = darray<in_flight_list>(mAllocator, 10);
 }
 
 void 
-gfx_command_queue::Deinit()
+gpu_command_queue::Deinit()
 {
 	if (!mQueueHandle || !mQueueFence) return; // nothing to deinit
 
@@ -59,12 +59,12 @@ gfx_command_queue::Deinit()
 
 	mInFlightCommandLists.Clear();
 
-	u32 ListTypeCount = u32(gfx_command_list_type::count);
+	u32 ListTypeCount = u32(gpu_command_list_type::count);
 	ForRange(u32, i, ListTypeCount)
 	{
 		ForRange(u32, j, mAvailableFlightCommandLists[i].Length())
 		{
-			gfx_command_list* List = mAvailableFlightCommandLists[i][j];
+			gpu_command_list* List = mAvailableFlightCommandLists[i][j];
 			List->Release();
 
 			mAllocator.Free(List);
@@ -79,7 +79,7 @@ gfx_command_queue::Deinit()
 	mDevice = nullptr;
 }
 
-gfx_command_queue::gfx_command_queue(gfx_command_queue&& Other)
+gpu_command_queue::gpu_command_queue(gpu_command_queue&& Other)
 {
 	mDevice      = Other.mDevice;
 	mAllocator   = Other.mAllocator;
@@ -88,7 +88,7 @@ gfx_command_queue::gfx_command_queue(gfx_command_queue&& Other)
 	mQueueHandle = Other.mQueueHandle;
 	mQueueFence  = Other.mQueueFence;
 
-	ForRange(u32, i, u32(gfx_command_list_type::count))
+	ForRange(u32, i, u32(gpu_command_list_type::count))
 	{
 		mAvailableFlightCommandLists[i] = Other.mAvailableFlightCommandLists[i];
 	}
@@ -99,11 +99,11 @@ gfx_command_queue::gfx_command_queue(gfx_command_queue&& Other)
 	Other.mDevice      = nullptr;
 	Other.mQueueHandle = nullptr;
 	Other.mQueueFence  = nullptr;
-	Other.mType        = gfx_command_queue_type::none;
+	Other.mType        = gpu_command_queue_type::none;
 	Other.mFenceValue  = 0;
 }
 
-gfx_command_queue& gfx_command_queue::operator=(gfx_command_queue&& Other)
+gpu_command_queue& gpu_command_queue::operator=(gpu_command_queue&& Other)
 {
 	mDevice      = Other.mDevice;
 	mAllocator   = Other.mAllocator;
@@ -112,7 +112,7 @@ gfx_command_queue& gfx_command_queue::operator=(gfx_command_queue&& Other)
 	mQueueHandle = Other.mQueueHandle;
 	mQueueFence  = Other.mQueueFence;
 
-	ForRange(u32, i, u32(gfx_command_list_type::count))
+	ForRange(u32, i, u32(gpu_command_list_type::count))
 	{
 		mAvailableFlightCommandLists[i] = Other.mAvailableFlightCommandLists[i];
 	}
@@ -123,13 +123,13 @@ gfx_command_queue& gfx_command_queue::operator=(gfx_command_queue&& Other)
 	Other.mDevice      = nullptr;
 	Other.mQueueHandle = nullptr;
 	Other.mQueueFence  = nullptr;
-	Other.mType        = gfx_command_queue_type::none;
+	Other.mType        = gpu_command_queue_type::none;
 	Other.mFenceValue  = 0;
 
 	return *this;
 }
 
-void gfx_command_queue::Flush()
+void gpu_command_queue::Flush()
 {
 	do
 	{
@@ -139,13 +139,13 @@ void gfx_command_queue::Flush()
 	} while (mInFlightCommandLists.Length() > 0);
 }
 
-gfx_command_list* 
-gfx_command_queue::GetCommandList(gfx_command_list_type Type)
+gpu_command_list* 
+gpu_command_queue::GetCommandList(gpu_command_list_type Type)
 {
-	assert(Type != gfx_command_list_type::none);
+	assert(Type != gpu_command_list_type::none);
 	u32 TypeIndex = u32(Type);
 
-	gfx_command_list* Result = mAllocator.Alloc<gfx_command_list>();
+	gpu_command_list* Result = mAllocator.Alloc<gpu_command_list>();
 	if (mAvailableFlightCommandLists[TypeIndex].Length() > 0)
 	{
 		Result = mAvailableFlightCommandLists[TypeIndex][u64(0)]; // The List was reset when it became available.
@@ -153,14 +153,14 @@ gfx_command_queue::GetCommandList(gfx_command_list_type Type)
 	}
 	else
 	{
-		Result = mAllocator.AllocEmplace<gfx_command_list>(*mDevice, Type);
+		Result = mAllocator.AllocEmplace<gpu_command_list>(*mDevice, Type);
 	}
 
 	return Result;
 }
 
 u64               
-gfx_command_queue::ExecuteCommandLists(farray<gfx_command_list*> CommandLists)
+gpu_command_queue::ExecuteCommandLists(farray<gpu_command_list*> CommandLists)
 {
 	// TODO(enlynn): Originally...I had to submit a copy for every command list
 	// in order to correctly resolve resource state. This time around, I would
@@ -191,7 +191,7 @@ gfx_command_queue::ExecuteCommandLists(farray<gfx_command_list*> CommandLists)
 }
 
 void              
-gfx_command_queue::ProcessCommandLists()
+gpu_command_queue::ProcessCommandLists()
 {
 	while (mInFlightCommandLists.Length() > 0 && IsFenceComplete(mInFlightCommandLists[u64(0)].FenceValue))
 	{
@@ -206,7 +206,7 @@ gfx_command_queue::ProcessCommandLists()
 }
 
 u64 
-gfx_command_queue::Signal()
+gpu_command_queue::Signal()
 {
 	mFenceValue += 1;
 	AssertHr(mQueueHandle->Signal(mQueueFence, mFenceValue));
@@ -214,13 +214,13 @@ gfx_command_queue::Signal()
 }
 
 bool           
-gfx_command_queue::IsFenceComplete(u64 FenceValue)
+gpu_command_queue::IsFenceComplete(u64 FenceValue)
 {
 	return mQueueFence->GetCompletedValue() >= FenceValue;
 }
 
-gfx_fence_result 
-gfx_command_queue::WaitForFence(u64 FenceValue)
+gpu_fence_result 
+gpu_command_queue::WaitForFence(u64 FenceValue)
 {
 	if (mQueueFence->GetCompletedValue() < FenceValue)
 	{
@@ -232,11 +232,11 @@ gfx_command_queue::WaitForFence(u64 FenceValue)
 
 	// TODO(enlynn): Would it be worth updating the fence value here?
 
-	return gfx_fence_result::success;
+	return gpu_fence_result::success;
 }
 
 void             
-gfx_command_queue::Wait(const gfx_command_queue* OtherQueue)
+gpu_command_queue::Wait(const gpu_command_queue* OtherQueue)
 {
 	mQueueHandle->Wait(OtherQueue->mQueueFence, OtherQueue->mFenceValue);
 }

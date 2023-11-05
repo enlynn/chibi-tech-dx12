@@ -6,7 +6,7 @@
 #include <util/array.h>
 #include <util/str8.h>
 
-class gfx_device;
+class gpu_device;
 
 /*
 
@@ -57,7 +57,7 @@ D3D12_ROOT_PARAMETER
 
 */
 
-enum class gfx_descriptor_type : u8
+enum class gpu_descriptor_type : u8
 {
     srv,
     uav,
@@ -65,7 +65,7 @@ enum class gfx_descriptor_type : u8
     sampler,
 };
 
-enum class gfx_descriptor_range_flags : u8
+enum class gpu_descriptor_range_flags : u8
 {
     none,                // Default behavior, SRV/CBV are static at execute, UAV are volatile 
     constant,            // Data is Constant and Descriptors are Constant. Best for driver optimization.
@@ -74,18 +74,18 @@ enum class gfx_descriptor_range_flags : u8
     descriptor_constant, // Data is Volatile and Descriptors are constant
 };
 
-struct gfx_root_descriptor
+struct gpu_root_descriptor
 {
     u32                        mRootIndex;                                         // Root Parameter Index must be set
-    gfx_descriptor_type        mType           = gfx_descriptor_type::cbv;
-    gfx_descriptor_range_flags mFlags          = gfx_descriptor_range_flags::none; // Volatile Descriptors are disallowed for Root Descriptors
+    gpu_descriptor_type        mType           = gpu_descriptor_type::cbv;
+    gpu_descriptor_range_flags mFlags          = gpu_descriptor_range_flags::none; // Volatile Descriptors are disallowed for Root Descriptors
     u32                        mShaderRegister = 0;
     u32                        mRegisterSpace  = 0;
 
     static constexpr u8 cDWordCount = 2;
 };
 
-struct gfx_root_constant
+struct gpu_root_constant
 {
     u32 mRootIndex;          // Root Parameter Index must be set
     u32 mShaderRegister = 0;
@@ -95,25 +95,25 @@ struct gfx_root_constant
     static constexpr u8 cDWordCount = 1;
 };
 
-struct gfx_descriptor_range
+struct gpu_descriptor_range
 {
-    gfx_descriptor_type        mType               = gfx_descriptor_type::cbv;
+    gpu_descriptor_type        mType               = gpu_descriptor_type::cbv;
     u32                        mNumDescriptors     = 1;
     u32                        mBaseShaderRegister = 0;
     u32                        mRegisterSpace      = 0;
     u32                        mDescriptorOffset   = 0;
-    gfx_descriptor_range_flags mFlags              = gfx_descriptor_range_flags::none;
+    gpu_descriptor_range_flags mFlags              = gpu_descriptor_range_flags::none;
 };
 
-struct gfx_descriptor_table
+struct gpu_descriptor_table
 {
     u32                          mRootIndex;            // Root Parameter Index must be set
-    farray<gfx_descriptor_range> mDescriptorRanges = {};
+    farray<gpu_descriptor_range> mDescriptorRanges = {};
 
     static constexpr u8 cDWordCount = 1;
 };
 
-struct gfx_static_sampler_desc
+struct gpu_static_sampler_desc
 {
     u32                        ShaderRegister   = 0;
     u32                        RegisterSpace    = 0;
@@ -130,23 +130,23 @@ struct gfx_static_sampler_desc
     D3D12_SHADER_VISIBILITY    ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 };
 
-struct gfx_root_signature_info
+struct gpu_root_signature_info
 {
-    farray<gfx_descriptor_table>    DescriptorTables    = {};
-    farray<gfx_root_descriptor>     Descriptors         = {};
-    farray<gfx_root_constant>       DescriptorConstants = {};
-    farray<gfx_static_sampler_desc> StaticSamplers      = {};
+    farray<gpu_descriptor_table>    DescriptorTables    = {};
+    farray<gpu_root_descriptor>     Descriptors         = {};
+    farray<gpu_root_constant>       DescriptorConstants = {};
+    farray<gpu_static_sampler_desc> StaticSamplers      = {};
     // TODO: Static samplers
     istr8                           Name                = {}; // Optional, Set only in debug mode only
 };
 
-class gfx_root_signature
+class gpu_root_signature
 {
 public:
-	gfx_root_signature() = default;
-    gfx_root_signature(const gfx_device& Device, const gfx_root_signature_info& Info);
+	gpu_root_signature() = default;
+    gpu_root_signature(const gpu_device& Device, const gpu_root_signature_info& Info);
 
-    u32 GetDescriptorTableBitmask(gfx_descriptor_type HeapType) const;
+    u32 GetDescriptorTableBitmask(gpu_descriptor_type HeapType) const;
     u32 GetNumDescriptors(u32 RootIndex)                        const;
     u32 GetRootParameterCount()                                 const { return mRootParameterCount; }
 

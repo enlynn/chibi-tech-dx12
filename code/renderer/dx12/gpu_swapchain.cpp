@@ -1,10 +1,10 @@
-#include "gfx_swapchain.h"
-#include "gfx_device.h"
-#include "gfx_command_queue.h"
+#include "gpu_swapchain.h"
+#include "gpu_device.h"
+#include "gpu_command_queue.h"
 
 #include <platform/platform.h>
 
-gfx_swapchain::gfx_swapchain(gfx_swapchain_info& Info, const platform_window& ClientWindow)
+gpu_swapchain::gpu_swapchain(gpu_swapchain_info& Info, const platform_window& ClientWindow)
 	: mInfo(Info)
 {
 	assert(mInfo.mDevice);
@@ -89,7 +89,7 @@ gfx_swapchain::gfx_swapchain(gfx_swapchain_info& Info, const platform_window& Cl
 		ClearValue.Color[3] = 1.0f;
 
 		mBackbuffers[i].Release(); // Release any lingering buffers
-		mBackbuffers[i] = gfx_resource(*mInfo.mDevice, Backbuffer, ClearValue);
+		mBackbuffers[i] = gpu_resource(*mInfo.mDevice, Backbuffer, ClearValue);
 
 		// Create the Render Target View
 		mInfo.mRenderTargetDesciptorHeap->ReleaseDescriptors(mDescriptors[i]);
@@ -104,7 +104,7 @@ gfx_swapchain::gfx_swapchain(gfx_swapchain_info& Info, const platform_window& Cl
 }
 
 void 
-gfx_swapchain::Deinit()
+gpu_swapchain::Deinit()
 {
 	ForRange(u32, i, cMaxBackBufferCount)
 	{ // Release all possible backbuffers
@@ -118,9 +118,9 @@ gfx_swapchain::Deinit()
 }
 
 u64 
-gfx_swapchain::Present()
+gpu_swapchain::Present()
 {
-	const gfx_resource& CurrentBackbuffer = mBackbuffers[mBackbufferIndex];
+	const gpu_resource& CurrentBackbuffer = mBackbuffers[mBackbufferIndex];
 	const UINT          SyncInterval      = mInfo.mVSyncEnabled ? 1 : 0;
 
 	u32 PresentFlags = 0;

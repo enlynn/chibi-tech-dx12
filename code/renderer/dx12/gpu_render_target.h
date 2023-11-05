@@ -4,7 +4,7 @@
 
 #include "d3d12_common.h"
 
-class gfx_resource;
+class gpu_resource;
 
 enum class attachmen_point : u8
 {
@@ -20,12 +20,12 @@ enum class attachmen_point : u8
     count,
 };
 
-class gfx_render_target
+class gpu_render_target
 {
 public:
-    gfx_render_target() = default;
+    gpu_render_target() = default;
 
-    void AttachTexture(attachmen_point Slot, gfx_resource* Texture);
+    void AttachTexture(attachmen_point Slot, gpu_resource* Texture);
     void DetachTexture(attachmen_point Slot);
 
     // Resets the state of the render target (all attached textures are removed)
@@ -38,7 +38,7 @@ public:
     // attached textures the same dimensions.
     void Resize(u32 Width, u32 Height);
 
-    const gfx_resource* GetTexture(attachmen_point Slot);
+    const gpu_resource* GetTexture(attachmen_point Slot);
 
     // Returns a packed array of the image formats for the textures assigned to this
     // Render Target. Particularly useful for creating PSOs.
@@ -61,7 +61,7 @@ private:
     // TODO(enlynn): Ideally, we would not be storing the Resource directly, but instead
     // be using a texture_id or something equivalent. This is just an implace solution'
     // until textures are implemented.
-    gfx_resource* mAttachments[int(attachmen_point::count)] = {};
+    gpu_resource* mAttachments[int(attachmen_point::count)] = {};
     // The expected width and height of the attached textures
     u32           mWidth;
     u32           mHeight;

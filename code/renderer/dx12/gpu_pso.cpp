@@ -1,8 +1,8 @@
-#include "gfx_pso.h"
-#include "gfx_device.h"
-#include "gfx_root_signature.h"
+#include "gpu_pso.h"
+#include "gpu_device.h"
+#include "gpu_root_signature.h"
 #include "renderer/dx12/d3d12_common.h"
-#include "renderer/dx12/gfx_pso.h"
+#include "renderer/dx12/gpu_pso.h"
 
 // SOURCE for constants: 
 // https://github.com/microsoft/DirectX-Graphics-Samples/blob/master/MiniEngine/Core/GraphicsCommon.cpp
@@ -359,27 +359,27 @@ var_global constexpr D3D12_BLEND_DESC cBlendTraditionalAdditive = {
 
 // Get a default description of the rasterizer state
 D3D12_RASTERIZER_DESC 
-GetRasterizerState(gfx_raster_state type)
+GetRasterizerState(gpu_raster_state type)
 {
     D3D12_RASTERIZER_DESC Result = {};
     
-    if (type == gfx_raster_state::default_raster)
+    if (type == gpu_raster_state::default_raster)
         Result = cRasterizerDefault;
-    else if (type == gfx_raster_state::default_msaa)
+    else if (type == gpu_raster_state::default_msaa)
         Result = cRasterizerDefaultMsaa;
-    else if (type == gfx_raster_state::default_cw)
+    else if (type == gpu_raster_state::default_cw)
         Result = cRasterizerDefaultCw;
-    else if (type == gfx_raster_state::default_cw_msaa)
+    else if (type == gpu_raster_state::default_cw_msaa)
         Result = cRasterizerDefaultCwMsaa;
-    else if (type == gfx_raster_state::two_sided)
+    else if (type == gpu_raster_state::two_sided)
         Result = cRasterizerTwoSided;
-    else if (type == gfx_raster_state::two_sided_msaa)
+    else if (type == gpu_raster_state::two_sided_msaa)
         Result = cRasterizerTwoSidedMsaa;
-    else if (type == gfx_raster_state::shadow)
+    else if (type == gpu_raster_state::shadow)
         Result = cRasterizerShadow;
-    else if (type == gfx_raster_state::shadow_cw)
+    else if (type == gpu_raster_state::shadow_cw)
         Result = cRasterizerShadowCW;
-    else if (type == gfx_raster_state::shadow_two_sided)
+    else if (type == gpu_raster_state::shadow_two_sided)
         Result = cRasterizerShadowTwoSided;
     
     return Result;
@@ -387,19 +387,19 @@ GetRasterizerState(gfx_raster_state type)
 
 // Get a default description of the depth-stencil state
 D3D12_DEPTH_STENCIL_DESC 
-GetDepthStencilState(gfx_depth_stencil_state type)
+GetDepthStencilState(gpu_depth_stencil_state type)
 {
     D3D12_DEPTH_STENCIL_DESC Result = {};
     
-    if (type == gfx_depth_stencil_state::disabled)
+    if (type == gpu_depth_stencil_state::disabled)
         Result = cDepthStateDisabled;
-    else if (type == gfx_depth_stencil_state::read_write)
+    else if (type == gpu_depth_stencil_state::read_write)
         Result = cDepthStateReadWrite;
-    else if (type == gfx_depth_stencil_state::read_only)
+    else if (type == gpu_depth_stencil_state::read_only)
         Result = cDepthStateReadOnly;
-    else if (type == gfx_depth_stencil_state::read_only_reversed)
+    else if (type == gpu_depth_stencil_state::read_only_reversed)
         Result = cDepthStateReadOnlyReversed;
-    else if (type == gfx_depth_stencil_state::test_equal)
+    else if (type == gpu_depth_stencil_state::test_equal)
         Result = cDepthStateTestEqual;
     
     return Result;
@@ -407,42 +407,42 @@ GetDepthStencilState(gfx_depth_stencil_state type)
 
 // Get a default description of the blend state
 D3D12_BLEND_DESC 
-GetBlendState(gfx_blend_state type)
+GetBlendState(gpu_blend_state type)
 {
     D3D12_BLEND_DESC Result = {};
     
-    if (type == gfx_blend_state::disabled)
+    if (type == gpu_blend_state::disabled)
         Result = cBlendDisable;
-    else if (type == gfx_blend_state::no_color_write)
+    else if (type == gpu_blend_state::no_color_write)
         Result = cBlendNoColorWrite;
-    else if (type == gfx_blend_state::traditional)
+    else if (type == gpu_blend_state::traditional)
         Result = cBlendTraditional;
-    else if (type == gfx_blend_state::pre_multiplied)
+    else if (type == gpu_blend_state::pre_multiplied)
         Result = cBlendPreMultiplied;
-    else if (type == gfx_blend_state::additive)
+    else if (type == gpu_blend_state::additive)
         Result = cBlendAdditive;
-    else if (type == gfx_blend_state::tradition_additive)
+    else if (type == gpu_blend_state::tradition_additive)
         Result = cBlendTraditionalAdditive;
     
     return Result;
 }
 
 constexpr D3D12_PRIMITIVE_TOPOLOGY_TYPE 
-ToD3DTopologyType(gfx_topology top)
+ToD3DTopologyType(gpu_topology top)
 {
     D3D12_PRIMITIVE_TOPOLOGY_TYPE result = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
-    if (top == gfx_topology::point)
+    if (top == gpu_topology::point)
         result = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
-    else if (top == gfx_topology::line)
+    else if (top == gpu_topology::line)
         result = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
-    else if (top == gfx_topology::triangle)
+    else if (top == gpu_topology::triangle)
         result = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    else if (top == gfx_topology::patch)
+    else if (top == gpu_topology::patch)
         result = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
     return result;
 }
 
-gfx_pso::gfx_pso(gfx_device& Device, gfx_pso_info& Info)
+gpu_pso::gpu_pso(gpu_device& Device, gpu_pso_info& Info)
 {
     D3D12_GRAPHICS_PIPELINE_STATE_DESC Desc{};
     Desc.pRootSignature    = Info.mRootSignature.AsHandle();

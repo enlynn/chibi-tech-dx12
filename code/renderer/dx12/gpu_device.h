@@ -4,14 +4,14 @@
 
 #include "d3d12_common.h"
 
-class gfx_device
+class gpu_device
 {
 public:
-	gfx_device() = default;
+	gpu_device() = default;
 	void Init();
 
 	void Deinit();
-	~gfx_device() { Deinit(); }
+	~gpu_device() { Deinit(); }
 
 	void ReportLiveObjects();
 

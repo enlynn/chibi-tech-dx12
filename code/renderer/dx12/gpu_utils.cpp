@@ -1,4 +1,4 @@
-#include "gfx_utils.h"
+#include "gpu_utils.h"
 
 D3D12_HEAP_PROPERTIES GetHeapProperties(D3D12_HEAP_TYPE Type)
 {

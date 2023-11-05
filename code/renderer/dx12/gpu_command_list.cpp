@@ -1,7 +1,7 @@
-#include "gfx_command_list.h"
+#include "gpu_command_list.h"
 
-#include "gfx_pso.h"
-#include "gfx_root_signature.h"
+#include "gpu_pso.h"
+#include "gpu_root_signature.h"
 
 #include <platform/platform.h>
 
@@ -50,7 +50,7 @@ GetTextureCopyLoction(ID3D12Resource* Resource, const D3D12_PLACED_SUBRESOURCE_F
 }
 
 fn_inline D3D12_COMMAND_LIST_TYPE 
-ToD3D12CommandListType(gfx_command_list_type Type)
+ToD3D12CommandListType(gpu_command_list_type Type)
 {
 #if 0
 D3D12_COMMAND_LIST_TYPE_DIRECT = 0,
@@ -65,16 +65,16 @@ D3D12_COMMAND_LIST_TYPE_NONE = -1
 
 	switch (Type)
 	{
-		case gfx_command_list_type::graphics: // intentional fallthrough
-		case gfx_command_list_type::indirect: return D3D12_COMMAND_LIST_TYPE_DIRECT;
-		case gfx_command_list_type::compute:  return D3D12_COMMAND_LIST_TYPE_COMPUTE;
-		case gfx_command_list_type::copy:     return D3D12_COMMAND_LIST_TYPE_COPY;
+		case gpu_command_list_type::graphics: // intentional fallthrough
+		case gpu_command_list_type::indirect: return D3D12_COMMAND_LIST_TYPE_DIRECT;
+		case gpu_command_list_type::compute:  return D3D12_COMMAND_LIST_TYPE_COMPUTE;
+		case gpu_command_list_type::copy:     return D3D12_COMMAND_LIST_TYPE_COPY;
 		default:                              return D3D12_COMMAND_LIST_TYPE_NONE;
 		
 	}
 }
 
-gfx_command_list::gfx_command_list(gfx_device& Device, gfx_command_list_type Type)
+gpu_command_list::gpu_command_list(gpu_device& Device, gpu_command_list_type Type)
 	: mType(Type)
 	, mDevice(&Device)
 {
@@ -89,11 +89,11 @@ gfx_command_list::gfx_command_list(gfx_device& Device, gfx_command_list_type Typ
 	ForRange(int, i, u32(dynamic_heap_type::max))
 	{
 		const allocator TempAllocator = allocator::Default();
-		mDynamicDescriptors[i] = gfx_dynamic_descriptor_heap(&Device, TempAllocator, dynamic_heap_type(i), 1024);
+		mDynamicDescriptors[i] = gpu_dynamic_descriptor_heap(&Device, TempAllocator, dynamic_heap_type(i), 1024);
 	}
 }
 
-void gfx_command_list::Release()
+void gpu_command_list::Release()
 {
 	ForRange(int, i, u32(dynamic_heap_type::max))
 	{
@@ -106,7 +106,7 @@ void gfx_command_list::Release()
 		ComSafeRelease(mHandle);
 }
 
-void gfx_command_list::Reset() 
+void gpu_command_list::Reset() 
 {
 	AssertHr(mAllocator->Reset());
 	AssertHr(mHandle->Reset(mAllocator, nullptr));
@@ -120,12 +120,12 @@ void gfx_command_list::Reset()
 	mBoundRootSignature = nullptr;
 }
 
-void gfx_command_list::Close()
+void gpu_command_list::Close()
 {
 	mHandle->Close();
 }
 
-void gfx_command_list::ClearTexture(const gfx_resource& TextureResource, f32 ClearColor[4])
+void gpu_command_list::ClearTexture(const gpu_resource& TextureResource, f32 ClearColor[4])
 {
 	D3D12_RESOURCE_BARRIER Barrier = {};
 	Barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -142,7 +142,7 @@ void gfx_command_list::ClearTexture(const gfx_resource& TextureResource, f32 Cle
 }
 
 void 
-gfx_command_list::TransitionBarrier(const gfx_resource& Resource, const gfx_transition_barrier& Barrier)
+gpu_command_list::TransitionBarrier(const gpu_resource& Resource, const gpu_transition_barrier& Barrier)
 {
 	D3D12_RESOURCE_BARRIER TransitionBarrier = {};
 	TransitionBarrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -158,9 +158,9 @@ gfx_command_list::TransitionBarrier(const gfx_resource& Resource, const gfx_tran
 }
 
 u64 
-gfx_command_list::UpdateSubresources(
-	const gfx_resource&                        DestinationResource,
-	const gfx_resource&                        IntermediateResource,
+gpu_command_list::UpdateSubresources(
+	const gpu_resource&                        DestinationResource,
+	const gpu_resource&                        IntermediateResource,
 	u32                                        FirstSubresource,   // Range = (0,D3D12_REQ_SUBRESOURCES)
 	u32                                        NumSubresources,    // Range = (0,D3D12_REQ_SUBRESOURCES-FirstSubresource)
 	u64                                        RequiredSize,
@@ -172,32 +172,32 @@ gfx_command_list::UpdateSubresources(
 	// Quick error checking.
 	if (FirstSubresource > D3D12_REQ_SUBRESOURCES)
 	{
-		LogFatal("gfx_command_list::UpdateSubresources : First Subresource should be between (0, 30720), but %d was provided.", FirstSubresource);
+		LogFatal("gpu_command_list::UpdateSubresources : First Subresource should be between (0, 30720), but %d was provided.", FirstSubresource);
 	}
 
 	if (NumSubresources > (D3D12_REQ_SUBRESOURCES - FirstSubresource))
 	{
-		LogFatal("gfx_command_list::UpdateSubresources : Number of Subresources should be between (FirstSubresource, 30720), but %d was provided.", NumSubresources);
+		LogFatal("gpu_command_list::UpdateSubresources : Number of Subresources should be between (FirstSubresource, 30720), but %d was provided.", NumSubresources);
 	}
 
 	if (SubresourceLayouts.Length() > 0 && SubresourceLayouts.Length() != NumSubresources)
 	{
-		LogFatal("gfx_command_list::UpdateSubresources : Number of Subresource Layouts should be the number of subresources to update, but was %d.", SubresourceLayouts.Length());
+		LogFatal("gpu_command_list::UpdateSubresources : Number of Subresource Layouts should be the number of subresources to update, but was %d.", SubresourceLayouts.Length());
 	}
 
 	if (SubresourceLayouts.Length() > 0 && NumRows.Length() != NumSubresources)
 	{
-		LogFatal("gfx_command_list::UpdateSubresources : Number of Subresource Rows should be the number of subresources to update, but was %d.", NumRows.Length());
+		LogFatal("gpu_command_list::UpdateSubresources : Number of Subresource Rows should be the number of subresources to update, but was %d.", NumRows.Length());
 	}
 
 	if (SubresourceLayouts.Length() > 0 && NumRowSizesInBytes.Length() != NumSubresources)
 	{
-		LogFatal("gfx_command_list::UpdateSubresources : Number of Subresource Row Sizes should be the number of subresources to update, but was %d.", NumRowSizesInBytes.Length());
+		LogFatal("gpu_command_list::UpdateSubresources : Number of Subresource Row Sizes should be the number of subresources to update, but was %d.", NumRowSizesInBytes.Length());
 	}
 
 	if (SubresourceLayouts.Length() > 0 && SubresourceData.Length() != NumSubresources)
 	{
-		LogFatal("gfx_command_list::UpdateSubresources : Number of Subresource Datas should be the number of subresources to update, but was %d.", SubresourceData.Length());
+		LogFatal("gpu_command_list::UpdateSubresources : Number of Subresource Datas should be the number of subresources to update, but was %d.", SubresourceData.Length());
 	}
 
 	// Some more minor validation
@@ -259,7 +259,7 @@ gfx_command_list::UpdateSubresources(
 }
 
 void 
-gfx_command_list::SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, ID3D12DescriptorHeap* Heap)
+gpu_command_list::SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, ID3D12DescriptorHeap* Heap)
 {
 	if (mBoundDescriptorHeaps[Type] != Heap)
 	{
@@ -269,7 +269,7 @@ gfx_command_list::SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, ID3D12Descr
 }
 
 void
-gfx_command_list::BindDescriptorHeaps()
+gpu_command_list::BindDescriptorHeaps()
 {
 	UINT                  NumHeaps                                          = 0;
 	ID3D12DescriptorHeap* HeapsToBind[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES] = {};
@@ -286,28 +286,28 @@ gfx_command_list::BindDescriptorHeaps()
 	mHandle->SetDescriptorHeaps(NumHeaps, HeapsToBind);
 }
 
-void gfx_command_list::SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW& IBView)
+void gpu_command_list::SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW& IBView)
 {
 	//TransitionBarrier(indexBuffer->GetResource(), D3D12_RESOURCE_STATE_INDEX_BUFFER);
 	mHandle->IASetIndexBuffer(&IBView);
 }
 
 void
-gfx_command_list::SetGraphics32BitConstants(u32 RootParameter, u32 NumConsants, void* Constants)
+gpu_command_list::SetGraphics32BitConstants(u32 RootParameter, u32 NumConsants, void* Constants)
 {
 	mHandle->SetGraphicsRoot32BitConstants(RootParameter, NumConsants, Constants, 0);
 }
 
 // Set the SRV on the graphics pipeline.
 void
-gfx_command_list::SetShaderResourceView(u32 RootParameter, u32 DescriptorOffset, cpu_descriptor SRVDescriptor)
+gpu_command_list::SetShaderResourceView(u32 RootParameter, u32 DescriptorOffset, cpu_descriptor SRVDescriptor)
 {
 	// TODO(enlynn): Verify the resource is in the correct final state
 	mDynamicDescriptors[u32(dynamic_heap_type::buffer)].StageDescriptors(RootParameter, DescriptorOffset, 1, SRVDescriptor.GetDescriptorHandle());
 }
 
 void
-gfx_command_list::SetShaderResourceViewInline(u32 RootParameter, ID3D12Resource* Buffer, u64 BufferOffset)
+gpu_command_list::SetShaderResourceViewInline(u32 RootParameter, ID3D12Resource* Buffer, u64 BufferOffset)
 {
 	if (Buffer)
 	{
@@ -315,7 +315,7 @@ gfx_command_list::SetShaderResourceViewInline(u32 RootParameter, ID3D12Resource*
 	}
 }
 
-void gfx_command_list::SetGraphicsRootSignature(const gfx_root_signature& RootSignature)
+void gpu_command_list::SetGraphicsRootSignature(const gpu_root_signature& RootSignature)
 {
 	ID3D12RootSignature* RootHandle = RootSignature.AsHandle();
 	if (mBoundRootSignature != RootHandle)
@@ -332,33 +332,33 @@ void gfx_command_list::SetGraphicsRootSignature(const gfx_root_signature& RootSi
 }
 
 void
-gfx_command_list::SetScissorRect(D3D12_RECT& ScissorRect)
+gpu_command_list::SetScissorRect(D3D12_RECT& ScissorRect)
 {
 	SetScissorRects(farray(&ScissorRect, 1));
 }
 
 void
-gfx_command_list::SetScissorRects(farray<D3D12_RECT> ScissorRects)
+gpu_command_list::SetScissorRects(farray<D3D12_RECT> ScissorRects)
 {
 	assert(ScissorRects.Length() < D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
 	mHandle->RSSetScissorRects((UINT)ScissorRects.Length(), ScissorRects.Ptr());
 }
 
 void
-gfx_command_list::SetViewport(D3D12_VIEWPORT& Viewport)
+gpu_command_list::SetViewport(D3D12_VIEWPORT& Viewport)
 {
 	SetViewports(farray(&Viewport, 1));
 }
 
 void
-gfx_command_list::SetViewports(farray<D3D12_VIEWPORT> Viewports)
+gpu_command_list::SetViewports(farray<D3D12_VIEWPORT> Viewports)
 {
 	assert(Viewports.Length() < D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE);
 	mHandle->RSSetViewports((UINT)Viewports.Length(), Viewports.Ptr());
 }
 
 void
-gfx_command_list::SetPipelineState(const gfx_pso& PipelineState)
+gpu_command_list::SetPipelineState(const gpu_pso& PipelineState)
 {
 	if (mBoundPipeline != PipelineState.AsHandle())
 	{
@@ -368,13 +368,13 @@ gfx_command_list::SetPipelineState(const gfx_pso& PipelineState)
 }
 
 void
-gfx_command_list::SetTopology(D3D12_PRIMITIVE_TOPOLOGY Topology)
+gpu_command_list::SetTopology(D3D12_PRIMITIVE_TOPOLOGY Topology)
 {
 	mHandle->IASetPrimitiveTopology(Topology);
 }
 
 void
-gfx_command_list::DrawInstanced(u32 VertexCountPerInstance, u32 InstanceCount, u32 StartVertexLocation, u32 StartInstanceLocation)
+gpu_command_list::DrawInstanced(u32 VertexCountPerInstance, u32 InstanceCount, u32 StartVertexLocation, u32 StartInstanceLocation)
 {
 	//FlushResourceBarriers();
 
@@ -388,7 +388,7 @@ gfx_command_list::DrawInstanced(u32 VertexCountPerInstance, u32 InstanceCount, u
 
 
 void
-gfx_command_list::DrawIndexedInstanced(u32 IndexCountPerInstance, u32 InstanceCount, u32 StartIndexLocation, u32 StartVertexLocation, u32 StartInstanceLocation)
+gpu_command_list::DrawIndexedInstanced(u32 IndexCountPerInstance, u32 InstanceCount, u32 StartIndexLocation, u32 StartVertexLocation, u32 StartInstanceLocation)
 {
 	//FlushResourceBarriers();
 

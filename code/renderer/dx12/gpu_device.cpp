@@ -1,4 +1,4 @@
-#include "gfx_device.h"
+#include "gpu_device.h"
 #include "d3d12_common.h"
 #include <platform/platform.h>
 
@@ -8,7 +8,7 @@
 var_global const D3D_FEATURE_LEVEL gMinFeatureLevel = D3D_FEATURE_LEVEL_12_0;
 
 void 
-gfx_device::Init()
+gpu_device::Init()
 {
 	EnableDebugDevice();
 	SelectAdapter();
@@ -66,7 +66,7 @@ gfx_device::Init()
 }
 
 void 
-gfx_device::Deinit()
+gpu_device::Deinit()
 {
 	ComSafeRelease(mDevice);
 	ComSafeRelease(mAdapter);
@@ -75,7 +75,7 @@ gfx_device::Deinit()
 }
 
 void 
-gfx_device::EnableDebugDevice()
+gpu_device::EnableDebugDevice()
 {
 #ifdef _DEBUG
 	ID3D12Debug* DebugController0;
@@ -98,7 +98,7 @@ gfx_device::EnableDebugDevice()
 }
 
 void
-gfx_device::ReportLiveObjects()
+gpu_device::ReportLiveObjects()
 {
 #if _DEBUG
 	IDXGIDebug1* Debug = nullptr;
@@ -111,7 +111,7 @@ gfx_device::ReportLiveObjects()
 }
 
 void 
-gfx_device::SelectAdapter()
+gpu_device::SelectAdapter()
 {
 	IDXGIFactory6* Factory6 = nullptr;
 	IDXGIAdapter1* Adapter  = nullptr;
@@ -169,7 +169,7 @@ gfx_device::SelectAdapter()
 }
 
 ID3D12DescriptorHeap* 
-gfx_device::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 Count, bool IsShaderVisible)
+gpu_device::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 Count, bool IsShaderVisible)
 {
 	ID3D12DescriptorHeap* Result = nullptr;
 

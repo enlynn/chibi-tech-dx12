@@ -61,9 +61,9 @@
 },
 {
   "directory": "C:/Users/enlynn/Documents/DEV/chibi-tech/out/build/x64-debug",
-  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_device.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_device.cpp",
-  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_device.cpp",
-  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_device.cpp.obj"
+  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_device.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_device.cpp",
+  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_device.cpp",
+  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_device.cpp.obj"
 },
 {
   "directory": "C:/Users/enlynn/Documents/DEV/chibi-tech/out/build/x64-debug",
@@ -73,50 +73,50 @@
 },
 {
   "directory": "C:/Users/enlynn/Documents/DEV/chibi-tech/out/build/x64-debug",
-  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_command_queue.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_command_queue.cpp",
-  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_command_queue.cpp",
-  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_command_queue.cpp.obj"
+  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_command_queue.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_command_queue.cpp",
+  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_command_queue.cpp",
+  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_command_queue.cpp.obj"
 },
 {
   "directory": "C:/Users/enlynn/Documents/DEV/chibi-tech/out/build/x64-debug",
-  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_command_list.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_command_list.cpp",
-  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_command_list.cpp",
-  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_command_list.cpp.obj"
+  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_command_list.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_command_list.cpp",
+  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_command_list.cpp",
+  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_command_list.cpp.obj"
 },
 {
   "directory": "C:/Users/enlynn/Documents/DEV/chibi-tech/out/build/x64-debug",
-  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_swapchain.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_swapchain.cpp",
-  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_swapchain.cpp",
-  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_swapchain.cpp.obj"
+  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_swapchain.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_swapchain.cpp",
+  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_swapchain.cpp",
+  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_swapchain.cpp.obj"
 },
 {
   "directory": "C:/Users/enlynn/Documents/DEV/chibi-tech/out/build/x64-debug",
-  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_resource.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_resource.cpp",
-  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_resource.cpp",
-  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_resource.cpp.obj"
+  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_resource.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_resource.cpp",
+  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_resource.cpp",
+  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_resource.cpp.obj"
 },
 {
   "directory": "C:/Users/enlynn/Documents/DEV/chibi-tech/out/build/x64-debug",
-  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_utils.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_utils.cpp",
-  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_utils.cpp",
-  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_utils.cpp.obj"
+  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_utils.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_utils.cpp",
+  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_utils.cpp",
+  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_utils.cpp.obj"
 },
 {
   "directory": "C:/Users/enlynn/Documents/DEV/chibi-tech/out/build/x64-debug",
-  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_descriptor_allocator.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_descriptor_allocator.cpp",
-  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_descriptor_allocator.cpp",
-  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_descriptor_allocator.cpp.obj"
+  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_descriptor_allocator.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_descriptor_allocator.cpp",
+  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_descriptor_allocator.cpp",
+  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_descriptor_allocator.cpp.obj"
 },
 {
   "directory": "C:/Users/enlynn/Documents/DEV/chibi-tech/out/build/x64-debug",
-  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_dynamic_descriptor_allocator.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_dynamic_descriptor_allocator.cpp",
-  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_dynamic_descriptor_allocator.cpp",
-  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_dynamic_descriptor_allocator.cpp.obj"
+  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_dynamic_descriptor_allocator.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_dynamic_descriptor_allocator.cpp",
+  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_dynamic_descriptor_allocator.cpp",
+  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_dynamic_descriptor_allocator.cpp.obj"
 },
 {
   "directory": "C:/Users/enlynn/Documents/DEV/chibi-tech/out/build/x64-debug",
-  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_root_signature.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_root_signature.cpp",
-  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gfx_root_signature.cpp",
-  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gfx_root_signature.cpp.obj"
+  "command": "C:\\PROGRA~1\\MICROS~2\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1437~1.328\\bin\\Hostx86\\x64\\cl.exe  /nologo /TP -DNOMINMAX -DWIN32_LEAN_AND_MEAN -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor -IC:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\vendor\\agility_sdk /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Ob0 /Od /RTC1 -std:c++20 -ZI /FoCMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_root_signature.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_root_signature.cpp",
+  "file": "C:\\Users\\enlynn\\Documents\\DEV\\chibi-tech\\code\\renderer\\dx12\\gpu_root_signature.cpp",
+  "output": "CMakeFiles\\chibi-tech.dir\\code\\renderer\\dx12\\gpu_root_signature.cpp.obj"
 }
 ]

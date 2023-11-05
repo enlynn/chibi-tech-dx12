@@ -4,12 +4,12 @@
 
 #include "d3d12_common.h"
 
-using gfx_shader_blob = ID3DBlob*;
-struct gfx_shader_modules
+using gpu_shader_blob = ID3DBlob*;
+struct gpu_shader_modules
 {
-	gfx_shader_blob Vertex  = nullptr;
-	gfx_shader_blob Pixel   = nullptr;
-	gfx_shader_blob Compute = nullptr;
+	gpu_shader_blob Vertex  = nullptr;
+	gpu_shader_blob Pixel   = nullptr;
+	gpu_shader_blob Compute = nullptr;
 	// TODO: Handle mesh shading and RT pipeline
 };
 
@@ -40,5 +40,5 @@ struct shader_resource : public resource
 	static constexpr const char* sPath = "shader/bin";
 
 	shader_stage    mStage      = shader_stage::unknown;
-	gfx_shader_blob mShaderBlob = nullptr;
+	gpu_shader_blob mShaderBlob = nullptr;
 };

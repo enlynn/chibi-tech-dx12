@@ -5,7 +5,7 @@
 
 #include "d3d12_common.h"
 
-class gfx_device;
+class gpu_device;
 class allocator;
 
 constexpr static int cMaxDesctiptorPages = 256;
@@ -29,7 +29,7 @@ class cpu_descriptor_page
 public:
 	cpu_descriptor_page() = default;
 	
-	void Init(gfx_device& Device, const allocator& Allocator, D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 MaxDescriptors);
+	void Init(gpu_device& Device, const allocator& Allocator, D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 MaxDescriptors);
 	void Deinit();
 
 	cpu_descriptor Allocate(u32 Count = 1);
@@ -76,7 +76,7 @@ class cpu_descriptor_allocator
 public:
 	cpu_descriptor_allocator() = default;
 
-	void Init(gfx_device* Device, const allocator& Allocator, D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 CountPerHeap = 256);
+	void Init(gpu_device* Device, const allocator& Allocator, D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 CountPerHeap = 256);
 	void Deinit();
 
 	// Allocates a number of contiguous descriptors from a CPU visible heap. Cannot be more than the number 
@@ -86,7 +86,7 @@ public:
 	void ReleaseDescriptors(cpu_descriptor Descriptors);
 
 private:
-	gfx_device*                mDevice = nullptr;
+	gpu_device*                mDevice = nullptr;
 	cpu_descriptor_page        mDescriptorPages[cMaxDesctiptorPages] = {}; // If this fills up, we have a problem.
 	u8                         mDescriptorPageCount                  = 0;  // The index of the next page to grab.
 

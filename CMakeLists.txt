@@ -28,7 +28,8 @@ set(PLATFORM_WIN32
 	"code/platform/win32/logger_win32.cpp"
 	"code/platform/win32/common_win32.cpp"
 	"code/platform/platform_logger.cpp"
- "code/platform/win32/file_win32.cpp")
+	"code/platform/win32/file_win32.cpp"
+)
 
 set(UTIL
 	"code/util/str8.h"      "code/util/str8.cpp"
@@ -40,18 +41,19 @@ set(UTIL
 set(RENDERER
 	"code/renderer/dx12/d3d12_common.h"
 	                                                        "code/renderer/dx12/d3d12_export.cpp"
-	"code/renderer/dx12/gfx_device.h"                       "code/renderer/dx12/gfx_device.cpp" 
+	"code/renderer/dx12/gpu_device.h"                       "code/renderer/dx12/gpu_device.cpp" 
 	"code/renderer/simple_renderer.h"                       "code/renderer/simple_renderer.cpp"
-	"code/renderer/dx12/gfx_command_queue.h"                "code/renderer/dx12/gfx_command_queue.cpp" 
-	"code/renderer/dx12/gfx_command_list.h"                 "code/renderer/dx12/gfx_command_list.cpp" 
-	"code/renderer/dx12/gfx_swapchain.h"                    "code/renderer/dx12/gfx_swapchain.cpp"
-	"code/renderer/dx12/gfx_resource.h"                     "code/renderer/dx12/gfx_resource.cpp" 
-	"code/renderer/dx12/gfx_utils.h"                        "code/renderer/dx12/gfx_utils.cpp" 
-	"code/renderer/dx12/gfx_descriptor_allocator.h"         "code/renderer/dx12/gfx_descriptor_allocator.cpp"
-	"code/renderer/dx12/gfx_dynamic_descriptor_heap.h" "code/renderer/dx12/gfx_dynamic_descriptor_heap.cpp" 
-	"code/renderer/dx12/gfx_root_signature.h"               "code/renderer/dx12/gfx_root_signature.cpp"
-	"code/renderer/dx12/gfx_pso.h"                          "code/renderer/dx12/gfx_pso.cpp"
- "code/renderer/dx12/gfx_shader_utils.h" "code/renderer/dx12/gfx_shader_utils.cpp")
+	"code/renderer/dx12/gpu_command_queue.h"                "code/renderer/dx12/gpu_command_queue.cpp" 
+	"code/renderer/dx12/gpu_command_list.h"                 "code/renderer/dx12/gpu_command_list.cpp" 
+	"code/renderer/dx12/gpu_swapchain.h"                    "code/renderer/dx12/gpu_swapchain.cpp"
+	"code/renderer/dx12/gpu_resource.h"                     "code/renderer/dx12/gpu_resource.cpp" 
+	"code/renderer/dx12/gpu_utils.h"                        "code/renderer/dx12/gpu_utils.cpp" 
+	"code/renderer/dx12/gpu_descriptor_allocator.h"         "code/renderer/dx12/gpu_descriptor_allocator.cpp"
+	"code/renderer/dx12/gpu_dynamic_descriptor_heap.h"      "code/renderer/dx12/gpu_dynamic_descriptor_heap.cpp" 
+	"code/renderer/dx12/gpu_root_signature.h"               "code/renderer/dx12/gpu_root_signature.cpp"
+	"code/renderer/dx12/gpu_pso.h"                          "code/renderer/dx12/gpu_pso.cpp"
+	"code/renderer/dx12/gpu_shader_utils.h"                 "code/renderer/dx12/gpu_shader_utils.cpp"
+)
 
 set(SYSTEMS
 	"code/systems/resource_system.h" "code/systems/resource_system.cpp"

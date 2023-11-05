@@ -1,8 +1,8 @@
-#include "gfx_resource.h"
-#include "gfx_device.h"
-#include "gfx_utils.h"
+#include "gpu_resource.h"
+#include "gpu_device.h"
+#include "gpu_utils.h"
 
-gfx_resource::gfx_resource(const gfx_device& Device, const D3D12_RESOURCE_DESC& Desc, std::optional <D3D12_CLEAR_VALUE> ClearValue)
+gpu_resource::gpu_resource(const gpu_device& Device, const D3D12_RESOURCE_DESC& Desc, std::optional <D3D12_CLEAR_VALUE> ClearValue)
 	: mClearValue(ClearValue)
 {
 	D3D12_HEAP_PROPERTIES Properties = GetHeapProperties();
@@ -15,7 +15,7 @@ gfx_resource::gfx_resource(const gfx_device& Device, const D3D12_RESOURCE_DESC& 
 	CheckFeatureSupport(Device);
 }
 
-gfx_resource::gfx_resource(const gfx_device& Device, ID3D12Resource* Resource, std::optional <D3D12_CLEAR_VALUE> ClearValue)
+gpu_resource::gpu_resource(const gpu_device& Device, ID3D12Resource* Resource, std::optional <D3D12_CLEAR_VALUE> ClearValue)
 	: mClearValue(ClearValue)
 	, mHandle(Resource)
 {
@@ -23,7 +23,7 @@ gfx_resource::gfx_resource(const gfx_device& Device, ID3D12Resource* Resource, s
 }
 
 void 
-gfx_resource::Release()
+gpu_resource::Release()
 {
 	if (IsValid())
 	{
@@ -34,7 +34,7 @@ gfx_resource::Release()
 }
 
 void
-gfx_resource::CheckFeatureSupport(const gfx_device& Device)
+gpu_resource::CheckFeatureSupport(const gpu_device& Device)
 {
 	D3D12_RESOURCE_DESC ResourceDesc = mHandle->GetDesc();
 	mFormatSupport.Format = ResourceDesc.Format;
@@ -42,19 +42,19 @@ gfx_resource::CheckFeatureSupport(const gfx_device& Device)
 }
 
 bool
-gfx_resource::CheckFormatSupport(D3D12_FORMAT_SUPPORT1 formatSupport)
+gpu_resource::CheckFormatSupport(D3D12_FORMAT_SUPPORT1 formatSupport)
 {
 	return (mFormatSupport.Support1 & formatSupport) != 0;
 }
 
 bool
-gfx_resource::CheckFormatSupport(D3D12_FORMAT_SUPPORT2 formatSupport)
+gpu_resource::CheckFormatSupport(D3D12_FORMAT_SUPPORT2 formatSupport)
 {
 	return (mFormatSupport.Support2 & formatSupport) != 0;
 }
 
 D3D12_RESOURCE_DESC 
-gfx_resource::GetResourceDesc() const
+gpu_resource::GetResourceDesc() const
 {
 	D3D12_RESOURCE_DESC Result = {};
 	if (IsValid())

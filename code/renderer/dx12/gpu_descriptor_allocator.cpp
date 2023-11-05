@@ -1,5 +1,5 @@
-#include "gfx_descriptor_allocator.h"
-#include "gfx_device.h"
+#include "gpu_descriptor_allocator.h"
+#include "gpu_device.h"
 
 #include <util/allocator.h>
 
@@ -12,7 +12,7 @@ cpu_descriptor::GetDescriptorHandle(u32 Offset) const
 }
 
 void 
-cpu_descriptor_page::Init(gfx_device& Device, const allocator& Allocator, D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 MaxDescriptors)
+cpu_descriptor_page::Init(gpu_device& Device, const allocator& Allocator, D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 MaxDescriptors)
 {
 	auto DeviceHandle = Device.AsHandle();
 
@@ -173,7 +173,7 @@ cpu_descriptor_page::FreeBlock(u32 Offset, u32 NumDescriptors)
 	}
 }
 
-void cpu_descriptor_allocator::Init(gfx_device* Device, const allocator& Allocator, D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 CountPerHeap)
+void cpu_descriptor_allocator::Init(gpu_device* Device, const allocator& Allocator, D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 CountPerHeap)
 {
 	mDevice              = Device;
 	mType                = Type;

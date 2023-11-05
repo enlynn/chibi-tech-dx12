@@ -1,4 +1,4 @@
-#include "gfx_shader_utils.h"
+#include "gpu_shader_utils.h"
 
 #include <platform/platform.h>
 

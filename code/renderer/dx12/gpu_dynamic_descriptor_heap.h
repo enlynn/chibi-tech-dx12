@@ -5,16 +5,16 @@
 
 #include <util/array.h>
 
-class gfx_device;
-class gfx_command_list;
-class gfx_root_signature;
+class gpu_device;
+class gpu_command_list;
+class gpu_root_signature;
 
 //
-// gfx_dynamic_descriptor_heap is an allocator for creating Per-Frame GPU-visible descriptors. The allocator stores
+// gpu_dynamic_descriptor_heap is an allocator for creating Per-Frame GPU-visible descriptors. The allocator stores
 // a cache of bitmasks that represents descriptor bindings into the active Root Signature. Descriptor Heaps and Descriptor
 // Copies only occur for bitmasks that have become stale (new bindings). This reduces redundant Descriptor Copies and
 // bindings. The Gpu Descriptor Heap is treated as an Arena Allocator - once one heap fills up, another heap is created. The 
-// Heaps are all reset with a single call to gfx_dynamic_descriptor_heap::Reset() and all previous GPU descriptors are invalidated. 
+// Heaps are all reset with a single call to gpu_dynamic_descriptor_heap::Reset() and all previous GPU descriptors are invalidated. 
 //
 
 enum class dynamic_heap_type : u8
@@ -24,11 +24,11 @@ enum class dynamic_heap_type : u8
     max,
 };
 
-class gfx_dynamic_descriptor_heap
+class gpu_dynamic_descriptor_heap
 {
 public:
-    gfx_dynamic_descriptor_heap() = default;
-    gfx_dynamic_descriptor_heap(gfx_device* Device, const allocator& Allocator, dynamic_heap_type Type, u32 CountPerHeap = 1024);
+    gpu_dynamic_descriptor_heap() = default;
+    gpu_dynamic_descriptor_heap(gpu_device* Device, const allocator& Allocator, dynamic_heap_type Type, u32 CountPerHeap = 1024);
     void Deinit();
 
     // Stages a contiguous range of CPU descriptors. Descriptors are not copied to the
@@ -36,7 +36,7 @@ public:
     void StageDescriptors(u32 RootParameterIndex, u32 DescriptorOffset, u32 NumDescriptors, D3D12_CPU_DESCRIPTOR_HANDLE CpuDescriptorHandle);
 
     //
-    // TODO(enlynn): These functions have an annoying cyclical dependency with gfx_command_list. A Command List calls into the descriptor
+    // TODO(enlynn): These functions have an annoying cyclical dependency with gpu_command_list. A Command List calls into the descriptor
     // heap, then the descriptor heaps calls into the command list to actually bind the descriptors. It would be nice if this didn't happen.
     //
     // Copy all of the descriptors to the GPU visible descriptor heap and bind the descriptor heap and the descriptor tables to the
@@ -47,11 +47,11 @@ public:
     using commit_descriptor_table_pfn  = void (*)(ID3D12GraphicsCommandList* CommandList, UINT DescriptorRootIndex, D3D12_GPU_DESCRIPTOR_HANDLE GpuDescriptorHandle);
     using commit_descriptor_inline_pfn = void (*)(ID3D12GraphicsCommandList* CommandList, UINT DescriptorRootIndex, D3D12_GPU_VIRTUAL_ADDRESS   GpuDescriptorHandle);
 
-    void CommitDescriptorTables(gfx_command_list* CommandList, commit_descriptor_table_pfn CommitTablesPFN);
-    void CommitInlineDescriptors(gfx_command_list* CommandList, D3D12_GPU_VIRTUAL_ADDRESS* GPuDescriptorHandles, u32* DescriptorBitmask, commit_descriptor_inline_pfn CommitInlinePFN);
+    void CommitDescriptorTables(gpu_command_list* CommandList, commit_descriptor_table_pfn CommitTablesPFN);
+    void CommitInlineDescriptors(gpu_command_list* CommandList, D3D12_GPU_VIRTUAL_ADDRESS* GPuDescriptorHandles, u32* DescriptorBitmask, commit_descriptor_inline_pfn CommitInlinePFN);
 
-    void CommitStagedDescriptorsForDraw(gfx_command_list* CommandList);
-    void CommitStagedDescriptorsForDispatch(gfx_command_list* CommandList);
+    void CommitStagedDescriptorsForDraw(gpu_command_list* CommandList);
+    void CommitStagedDescriptorsForDispatch(gpu_command_list* CommandList);
 
     //
     // Copies a single CPU visible descriptor to a GPU visible descriptor heap.
@@ -60,11 +60,11 @@ public:
     // - ID3D12GraphicsCommandList::ClearUnorderedAccessViewUint
     // functions which require both a CPU and GPU visible descriptors for a UAV resource.
     //
-    D3D12_GPU_DESCRIPTOR_HANDLE CopyDescriptor(gfx_command_list* CommandList, D3D12_CPU_DESCRIPTOR_HANDLE CpuDescriptorHandle);
+    D3D12_GPU_DESCRIPTOR_HANDLE CopyDescriptor(gpu_command_list* CommandList, D3D12_CPU_DESCRIPTOR_HANDLE CpuDescriptorHandle);
 
     // Parse root signature to determine which root parameters contain descriptor tables and determine the number of 
     // descriptors needed for each table
-    void ParseRootSignature(const gfx_root_signature& RootSignature);
+    void ParseRootSignature(const gpu_root_signature& RootSignature);
 
     // Reset used descriptors. This should only be done if any
     // descriptors that are being referenced by a command list 
@@ -78,7 +78,7 @@ public:
 
 private:
     // Updates the current heap if the active heap is not large enough for the number of descriptors needed to commit
-    void                  UpdateCurrentHeap(gfx_command_list* CommandList, u32 NumDescriptorsToCommit);
+    void                  UpdateCurrentHeap(gpu_command_list* CommandList, u32 NumDescriptorsToCommit);
     // Request a heap - if one is available
     ID3D12DescriptorHeap* RequestDescriptorHeap();
     // Compute the number of stale descriptors that need to be copied to the GPU visible descriptor heap
@@ -95,7 +95,7 @@ private:
     };
 
     allocator                            mAllocator          = {};
-    gfx_device*                          mDevice             = nullptr;
+    gpu_device*                          mDevice             = nullptr;
 
     // Describes the type of descriptors that can be staged using this
     // dynamic descriptor heap. Valid values are:

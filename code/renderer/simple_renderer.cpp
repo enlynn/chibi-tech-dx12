@@ -1,14 +1,14 @@
 #include "simple_renderer.h"
 #include "d3d12/d3d12.h"
-#include "dx12/gfx_device.h"
-#include "dx12/gfx_command_queue.h"
-#include "dx12/gfx_resource.h"
-#include "dx12/gfx_descriptor_allocator.h"
-#include "dx12/gfx_swapchain.h"
-#include "dx12/gfx_utils.h"
-#include "dx12/gfx_shader_utils.h"
-#include "dx12/gfx_root_signature.h"
-#include "dx12/gfx_pso.h"
+#include "dx12/gpu_device.h"
+#include "dx12/gpu_command_queue.h"
+#include "dx12/gpu_resource.h"
+#include "dx12/gpu_descriptor_allocator.h"
+#include "dx12/gpu_swapchain.h"
+#include "dx12/gpu_utils.h"
+#include "dx12/gpu_shader_utils.h"
+#include "dx12/gpu_root_signature.h"
+#include "dx12/gpu_pso.h"
 
 #include <types.h>
 #include <util/allocator.h>
@@ -16,9 +16,9 @@
 
 // TODO(enlynn): Remove this header from the renderer
 #include "dx12/d3d12_common.h"
-#include "renderer/dx12/gfx_resource.h"
+#include "renderer/dx12/gpu_resource.h"
 
-enum class gfx_buffer_type : u8
+enum class gpu_buffer_type : u8
 {
 	byte_address,
 	structured,
@@ -34,10 +34,10 @@ enum class triangle_root_parameter
 	per_draw      = 1,
 };
 
-struct gfx_buffer
+struct gpu_buffer
 {
-	gfx_buffer_type              mType;
-	gfx_resource                 mResource;
+	gpu_buffer_type              mType;
+	gpu_resource                 mResource;
 
 	union
 	{ // Buffer Views for Vertex and Index Buffer
@@ -56,44 +56,44 @@ struct gfx_buffer
 	u64 mIndexCount;
 };
 
-struct gfx_global
+struct gpu_global
 {
 	allocator                  mHeapAllocator = {};
 	u64                        mFrameCount    = 0;
 
-	gfx_device                 mDevice        = {};
-	gfx_swapchain              mSwapchain     = {};
+	gpu_device                 mDevice        = {};
+	gpu_swapchain              mSwapchain     = {};
 
-	gfx_command_queue          mGraphicsQueue = {};
-	gfx_command_queue          mComputeQueue;
-	gfx_command_queue          mCopyQueue;
+	gpu_command_queue          mGraphicsQueue = {};
+	gpu_command_queue          mComputeQueue;
+	gpu_command_queue          mCopyQueue;
 
 	cpu_descriptor_allocator   mStaticDescriptors[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];  // Global descriptors, long lived
 	//gpu_descriptor_allocator   mDynamicDescriptors[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES]; // Per Frame descriptors, lifetime is a single frame
 
-	//gfx_resource_tracker       mResourceStates;                                           // Tracks global resource state
+	//gpu_resource_tracker       mResourceStates;                                           // Tracks global resource state
 
-	//gfx_mesh_storage           mMeshStorage;
-	//gfx_texture_storage        mTextureStorage;
-	//gfx_material_storage       mMaterialStorage;
+	//gpu_mesh_storage           mMeshStorage;
+	//gpu_texture_storage        mTextureStorage;
+	//gpu_material_storage       mMaterialStorage;
 
 	// Temporary
-	gfx_buffer         mVertexResource = {};
+	gpu_buffer         mVertexResource = {};
 	cpu_descriptor     mVertexSrv      = {}; // Ideally we wouldn't have a SRV for individual buffers?
 
-	gfx_buffer         mIndexResource  = {};
+	gpu_buffer         mIndexResource  = {};
 
-	gfx_root_signature mSimpleSignature = {};
-	gfx_pso            mSimplePipeline  = {};
+	gpu_root_signature mSimpleSignature = {};
+	gpu_pso            mSimplePipeline  = {};
 };
 
 struct per_frame_cache
 {
-	gfx_global*             Global         = nullptr;
-	darray<gfx_resource>    mStaleResources = {};         // Resources that needs to be freed. Is freed on next use
-	//darray<gfx_upload_data> ToUploadData;              // Resources that needs to be placed on the GPU. 
+	gpu_global*             Global         = nullptr;
+	darray<gpu_resource>    mStaleResources = {};         // Resources that needs to be freed. Is freed on next use
+	//darray<gpu_upload_data> ToUploadData;              // Resources that needs to be placed on the GPU. 
 
-	//gfx_resource_tracker    ResourceStateCache;        // Tracks Temporary resource state. Often is flushed before a draw call
+	//gpu_resource_tracker    ResourceStateCache;        // Tracks Temporary resource state. Often is flushed before a draw call
 
 	ID3D12DescriptorHeap*   mBoundDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
 };
@@ -107,18 +107,18 @@ struct vertex_draw_constants
 constexpr  int              cMaxFrameCache                 = 5; // Keep up to 5 frames
 var_global per_frame_cache  gPerFrameCache[cMaxFrameCache] = {}; 
 var_global per_frame_cache* gFrameCache                    = nullptr; 
-var_global gfx_global       gGlobal                        = {};
+var_global gpu_global       gGlobal                        = {};
 
 //var_global gpu_descriptor_allocator gGpuDescriptors;
 
 // TODO: Refactor out the "CopyBuffer" portion so we can reuse it across Buffer types.
 
-fn_internal gfx_resource
-CopyBuffer(gfx_command_list* CopyList, void* BufferData, u64 BufferSize, D3D12_RESOURCE_FLAGS Flags = D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATES InitialBufferState = D3D12_RESOURCE_STATE_COMMON)
+fn_internal gpu_resource
+CopyBuffer(gpu_command_list* CopyList, void* BufferData, u64 BufferSize, D3D12_RESOURCE_FLAGS Flags = D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATES InitialBufferState = D3D12_RESOURCE_STATE_COMMON)
 {
-	const gfx_device& Device = gGlobal.mDevice;
+	const gpu_device& Device = gGlobal.mDevice;
 
-	gfx_resource Result = {};
+	gpu_resource Result = {};
 	if (BufferSize == 0)
 	{
 		// This will result in a NULL resource (which may be desired to define a default null resource).
@@ -139,7 +139,7 @@ CopyBuffer(gfx_command_list* CopyList, void* BufferData, u64 BufferSize, D3D12_R
 			ComCast(&TempResource)
 		));
 
-		Result = gfx_resource(Device, TempResource);
+		Result = gpu_resource(Device, TempResource);
         
 		// TODO: Track resource state.
 
@@ -164,7 +164,7 @@ CopyBuffer(gfx_command_list* CopyList, void* BufferData, u64 BufferSize, D3D12_R
 				ComCast(&UploadResourceTemp)
 			));
 
-			gfx_resource UploadResource = gfx_resource(Device, UploadResourceTemp);
+			gpu_resource UploadResource = gpu_resource(Device, UploadResourceTemp);
             
 			D3D12_SUBRESOURCE_DATA SubresourceData = {};
 			SubresourceData.pData                  = BufferData;
@@ -172,7 +172,7 @@ CopyBuffer(gfx_command_list* CopyList, void* BufferData, u64 BufferSize, D3D12_R
 			SubresourceData.SlicePitch             = SubresourceData.RowPitch;
 
 			{
-				gfx_transition_barrier BufferCopyDstBarrier = {};
+				gpu_transition_barrier BufferCopyDstBarrier = {};
 				BufferCopyDstBarrier.BeforeState = D3D12_RESOURCE_STATE_COMMON;
 				BufferCopyDstBarrier.AfterState  = D3D12_RESOURCE_STATE_COPY_DEST;
 				CopyList->TransitionBarrier(Result, BufferCopyDstBarrier);
@@ -191,7 +191,7 @@ CopyBuffer(gfx_command_list* CopyList, void* BufferData, u64 BufferSize, D3D12_R
 	}
 
 	{ // Transition the buffer back to be used
-		gfx_transition_barrier BufferBarrier = {};
+		gpu_transition_barrier BufferBarrier = {};
 		BufferBarrier.BeforeState = D3D12_RESOURCE_STATE_COPY_DEST;
 		BufferBarrier.AfterState  = InitialBufferState;
 		CopyList->TransitionBarrier(Result, BufferBarrier);
@@ -200,29 +200,29 @@ CopyBuffer(gfx_command_list* CopyList, void* BufferData, u64 BufferSize, D3D12_R
 	return Result;
 }
 
-fn_internal gfx_buffer 
-CreateByteAddressBuffer(gfx_command_list* List, void* BufferData, u64 Count, u64 Stride = 1)
+fn_internal gpu_buffer 
+CreateByteAddressBuffer(gpu_command_list* List, void* BufferData, u64 Count, u64 Stride = 1)
 {
 	u64 BufferSize = Count * Stride;
 	// Not sure if this should be D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER or D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
-	gfx_resource BufferResource = CopyBuffer(List, BufferData, BufferSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+	gpu_resource BufferResource = CopyBuffer(List, BufferData, BufferSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 
-	gfx_buffer Result = {};
-	Result.mType      = gfx_buffer_type::byte_address;
+	gpu_buffer Result = {};
+	Result.mType      = gpu_buffer_type::byte_address;
 	Result.mResource  = BufferResource;
 	// Shader Resource View?
 
 	return Result;
 }
 
-fn_internal gfx_buffer 
-CreateIndexBuffer(gfx_command_list* List, void* BufferData, u64 Count, u64 Stride = sizeof(u32))
+fn_internal gpu_buffer 
+CreateIndexBuffer(gpu_command_list* List, void* BufferData, u64 Count, u64 Stride = sizeof(u32))
 {
 	u64 BufferSize = Count * Stride;
-	gfx_resource BufferResource = CopyBuffer(List, BufferData, BufferSize, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+	gpu_resource BufferResource = CopyBuffer(List, BufferData, BufferSize, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_INDEX_BUFFER);
 
-	gfx_buffer Result = {};
-	Result.mType      = gfx_buffer_type::index;
+	gpu_buffer Result = {};
+	Result.mType      = gpu_buffer_type::index;
 	Result.mResource  = BufferResource;
 
 	Result.mIndexView.BufferLocation = BufferResource.AsHandle()->GetGPUVirtualAddress();
@@ -242,7 +242,7 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 		gGlobal.mHeapAllocator = RenderInfo.HeapAllocator->Clone();
 
 	gGlobal.mDevice.Init();
-	gGlobal.mGraphicsQueue = gfx_command_queue(gGlobal.mHeapAllocator, gfx_command_queue_type::graphics, &gGlobal.mDevice);
+	gGlobal.mGraphicsQueue = gpu_command_queue(gGlobal.mHeapAllocator, gpu_command_queue_type::graphics, &gGlobal.mDevice);
 
 	// Create the CPU Descriptor Allocators
 	ForRange(u32, i, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES)
@@ -250,14 +250,14 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 		gGlobal.mStaticDescriptors[i].Init(&gGlobal.mDevice, gGlobal.mHeapAllocator, (D3D12_DESCRIPTOR_HEAP_TYPE)i);
 	}
 
-	gfx_swapchain_info SwapchainInfo = {
+	gpu_swapchain_info SwapchainInfo = {
 		.mDevice                    = &gGlobal.mDevice,
 		.mPresentQueue              = &gGlobal.mGraphicsQueue,
 		.mRenderTargetDesciptorHeap = &gGlobal.mStaticDescriptors[D3D12_DESCRIPTOR_HEAP_TYPE_RTV],
 		// Leave everything else at their defaults for now...
 	};
 
-	gGlobal.mSwapchain = gfx_swapchain(SwapchainInfo, RenderInfo.ClientWindow);
+	gGlobal.mSwapchain = gpu_swapchain(SwapchainInfo, RenderInfo.ClientWindow);
 
 	//
 	// Let's setup the the Per Frame Resources and let Frame 0 be the setup frame
@@ -265,7 +265,7 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 	ForRange(int, i, cMaxFrameCache)
 	{
 		gPerFrameCache[i].Global          = &gGlobal;
-		gPerFrameCache[i].mStaleResources = darray<gfx_resource>(gGlobal.mHeapAllocator, 5);
+		gPerFrameCache[i].mStaleResources = darray<gpu_resource>(gGlobal.mHeapAllocator, 5);
 	}
 
 	gFrameCache = &gPerFrameCache[0];
@@ -284,7 +284,7 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 
 	u16 Indices[] = { 0, 1, 2 };
 
-	gfx_command_list* UploadList = gGlobal.mGraphicsQueue.GetCommandList();
+	gpu_command_list* UploadList = gGlobal.mGraphicsQueue.GetCommandList();
 
 	gGlobal.mVertexResource = CreateByteAddressBuffer(UploadList, (void*)Vertices, 
 		ArrayCount(Vertices), sizeof(vertex));
@@ -319,19 +319,19 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 	RenderInfo.ResourceSystem.Load(resource_type::builtin_shader, "TestTriangle", &PixelShader);
 
 	{ // Create a simple root signature
-		gfx_root_descriptor VertexBuffers[]    = { { .mRootIndex = u32(triangle_root_parameter::vertex_buffer), .mType = gfx_descriptor_type::srv } };
-		gfx_root_constant   PerDrawConstants[] = { { .mRootIndex = u32(triangle_root_parameter::per_draw), .mNum32bitValues = sizeof(vertex_draw_constants) / 4 } };
+		gpu_root_descriptor VertexBuffers[]    = { { .mRootIndex = u32(triangle_root_parameter::vertex_buffer), .mType = gpu_descriptor_type::srv } };
+		gpu_root_constant   PerDrawConstants[] = { { .mRootIndex = u32(triangle_root_parameter::per_draw), .mNum32bitValues = sizeof(vertex_draw_constants) / 4 } };
 		const char*         DebugName          = "Simple Root Signature";
 
-		gfx_root_signature_info Info = {};
+		gpu_root_signature_info Info = {};
 		Info.Descriptors         = farray(VertexBuffers, ArrayCount(VertexBuffers));
 		Info.DescriptorConstants = farray(PerDrawConstants, ArrayCount(PerDrawConstants));
 		Info.Name                = DebugName;
-		gGlobal.mSimpleSignature = gfx_root_signature(gGlobal.mDevice, Info);
+		gGlobal.mSimpleSignature = gpu_root_signature(gGlobal.mDevice, Info);
 	}
 
 	{ // Create a simple pso
-		gfx_pso_info Info = { .mRootSignature = gGlobal.mSimpleSignature };
+		gpu_pso_info Info = { .mRootSignature = gGlobal.mSimpleSignature };
 		Info.mVertexShader = VertexShader.GetShaderBytecode();
 		Info.mPixelShader  = PixelShader.GetShaderBytecode();
 
@@ -340,16 +340,16 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 		PsoRTFormats.RTFormats[0]     = gGlobal.mSwapchain.GetSwapchainFormat();
 		Info.mRenderTargetFormats     = PsoRTFormats;
 
-		gGlobal.mSimplePipeline = gfx_pso(gGlobal.mDevice, Info);
+		gGlobal.mSimplePipeline = gpu_pso(gGlobal.mDevice, Info);
 	}
 
 	gGlobal.mFrameCount += 1;
 }
 
 fn_internal void
-ReleaseStateResources(darray<gfx_resource>& StaleResources)
+ReleaseStateResources(darray<gpu_resource>& StaleResources)
 {
-	for (gfx_resource& Resource : StaleResources)
+	for (gpu_resource& Resource : StaleResources)
 	{
 		ID3D12Resource* ResourceHandle = Resource.AsHandle();
 		ComSafeRelease(ResourceHandle);
@@ -369,12 +369,12 @@ SimpleRendererRender()
 	ReleaseStateResources(gFrameCache->mStaleResources);
 
 	// Let's render!
-	const gfx_resource&   Backbuffer          = gGlobal.mSwapchain.GetCurrentBackbuffer();
+	const gpu_resource&   Backbuffer          = gGlobal.mSwapchain.GetCurrentBackbuffer();
 	const cpu_descriptor& SwapchainDescriptor = gGlobal.mSwapchain.GetCurrentRenderTarget();
 
-	gfx_command_list* List = gGlobal.mGraphicsQueue.GetCommandList();
+	gpu_command_list* List = gGlobal.mGraphicsQueue.GetCommandList();
 
-	gfx_transition_barrier ToClearBarrier = {};
+	gpu_transition_barrier ToClearBarrier = {};
 	ToClearBarrier.BeforeState = D3D12_RESOURCE_STATE_COMMON;
 	ToClearBarrier.AfterState  = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	List->TransitionBarrier(Backbuffer, ToClearBarrier);
@@ -421,7 +421,7 @@ SimpleRendererRender()
 
 	List->DrawIndexedInstanced((u32)gGlobal.mIndexResource.mIndexCount);
 
-	gfx_transition_barrier ToRenderBarrier = {};
+	gpu_transition_barrier ToRenderBarrier = {};
 	ToRenderBarrier.BeforeState = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	ToRenderBarrier.AfterState  = D3D12_RESOURCE_STATE_PRESENT;
 	List->TransitionBarrier(Backbuffer, ToRenderBarrier);
