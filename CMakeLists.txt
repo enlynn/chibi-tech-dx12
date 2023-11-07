@@ -53,10 +53,18 @@ set(RENDERER
 	"code/renderer/dx12/gpu_root_signature.h"               "code/renderer/dx12/gpu_root_signature.cpp"
 	"code/renderer/dx12/gpu_pso.h"                          "code/renderer/dx12/gpu_pso.cpp"
 	"code/renderer/dx12/gpu_shader_utils.h"                 "code/renderer/dx12/gpu_shader_utils.cpp"
+	"code/renderer/dx12/gpu_buffer.h"                       "code/renderer/dx12/gpu_buffer.cpp"
+ 	"code/renderer/dx12/gpu_state.h"
+	"code/renderer/dx12/gpu_render_target.h"	            "code/renderer/dx12/gpu_render_target.cpp"
+	"code/renderer/dx12/gpu_texture.h"                      "code/renderer/dx12/gpu_texture.cpp"
 )
 
 set(SYSTEMS
 	"code/systems/resource_system.h" "code/systems/resource_system.cpp"
+)
+set(MATH
+		code/math/math.h
+		code/math/color.h
 )
 
 # Add source to this project's executable.
@@ -66,7 +74,8 @@ add_executable (chibi-tech
 	${UTIL}
 	${RENDERER}
 	${SYSTEMS}
- )
+	${MATH}
+)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET chibi-tech PROPERTY CXX_STANDARD 20)

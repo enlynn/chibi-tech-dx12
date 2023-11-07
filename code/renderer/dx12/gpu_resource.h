@@ -27,6 +27,8 @@ public:
 
 	D3D12_RESOURCE_DESC                     GetResourceDesc() const;
 
+    D3D12_GPU_VIRTUAL_ADDRESS               GetGPUAddress() const { return mHandle->GetGPUVirtualAddress(); }
+
 	inline ID3D12Resource*                  AsHandle()      const { return mHandle;            }
 	inline bool                             IsValid()       const { return mHandle != nullptr; }
 	inline std::optional<D3D12_CLEAR_VALUE> GetClearValue() const { return mClearValue;        }

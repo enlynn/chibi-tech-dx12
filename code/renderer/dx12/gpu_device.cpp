@@ -1,11 +1,22 @@
 #include "gpu_device.h"
 #include "d3d12_common.h"
+#include "gpu_utils.h"
 #include <platform/platform.h>
 
 #include <util/str8.h>
 #include <util/str16.h>
 
 var_global const D3D_FEATURE_LEVEL gMinFeatureLevel = D3D_FEATURE_LEVEL_12_0;
+
+void DeviceValidationCallback(
+    D3D12_MESSAGE_CATEGORY Category,
+    D3D12_MESSAGE_SEVERITY Severity,
+    D3D12_MESSAGE_ID ID,
+    LPCSTR pDescription,
+    void* pContext)
+{
+    LogWarn("This is a validation call.");
+}
 
 void 
 gpu_device::Init()
@@ -38,6 +49,19 @@ gpu_device::Init()
 		MessageFilter.DenyList.NumIDs = ArrayCount(HideMessages);
 		MessageFilter.DenyList.pIDList = HideMessages;
 		InfoQueue->PushStorageFilter(&MessageFilter);
+
+        ID3D12InfoQueue1* InfoQueue1 = nullptr;
+        if (SUCCEEDED(mDevice->QueryInterface(ComCast(&InfoQueue1))))
+        {
+            DWORD CallbackIdentifier;
+            AssertHr(InfoQueue1->RegisterMessageCallback(
+                DeviceValidationCallback,
+                D3D12_MESSAGE_CALLBACK_FLAG_NONE,
+                nullptr,
+                &CallbackIdentifier
+            ));
+            ComSafeRelease(InfoQueue1);
+        }
 
 		ComSafeRelease(InfoQueue);
 	}
@@ -180,4 +204,24 @@ gpu_device::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 Count, boo
 	AssertHr(mDevice->CreateDescriptorHeap(&Desc, ComCast(&Result)));
 
 	return Result;
+}
+
+gpu_resource
+gpu_device::CreateCommittedResource(commited_resource_info& Info)
+{
+    ID3D12Resource* TempResource = nullptr;
+
+    D3D12_HEAP_PROPERTIES HeapProperties = GetHeapProperties(Info.HeapType);
+    D3D12_RESOURCE_DESC   BufferDesc     = GetBufferResourceDesc(Info.Size, Info.ResourceFlags, Info.Alignment);
+
+    AssertHr(mDevice->CreateCommittedResource(
+        &HeapProperties,
+        Info.HeapFlags,
+        &BufferDesc,
+        Info.InitialState,
+        Info.ClearValue,
+        ComCast(&TempResource))
+    );
+
+    return gpu_resource(*this, TempResource);
 }

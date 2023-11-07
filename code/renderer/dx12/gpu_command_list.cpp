@@ -286,7 +286,7 @@ gpu_command_list::BindDescriptorHeaps()
 	mHandle->SetDescriptorHeaps(NumHeaps, HeapsToBind);
 }
 
-void gpu_command_list::SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW& IBView)
+void gpu_command_list::SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW IBView)
 {
 	//TransitionBarrier(indexBuffer->GetResource(), D3D12_RESOURCE_STATE_INDEX_BUFFER);
 	mHandle->IASetIndexBuffer(&IBView);
@@ -306,12 +306,11 @@ gpu_command_list::SetShaderResourceView(u32 RootParameter, u32 DescriptorOffset,
 	mDynamicDescriptors[u32(dynamic_heap_type::buffer)].StageDescriptors(RootParameter, DescriptorOffset, 1, SRVDescriptor.GetDescriptorHandle());
 }
 
-void
-gpu_command_list::SetShaderResourceViewInline(u32 RootParameter, ID3D12Resource* Buffer, u64 BufferOffset)
+void gpu_command_list::SetShaderResourceViewInline(u32 RootParameter, gpu_resource* Buffer, u64 BufferOffset)
 {
 	if (Buffer)
 	{
-		mDynamicDescriptors[u32(dynamic_heap_type::buffer)].StageInlineSRV(RootParameter, Buffer->GetGPUVirtualAddress() + BufferOffset);
+		mDynamicDescriptors[u32(dynamic_heap_type::buffer)].StageInlineSRV(RootParameter, Buffer->GetGPUAddress() + BufferOffset);
 	}
 }
 

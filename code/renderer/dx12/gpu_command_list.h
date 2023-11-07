@@ -111,11 +111,11 @@ public:
 	void SetTopology(D3D12_PRIMITIVE_TOPOLOGY Topology);
 
 	// Buffer Binding
-	void SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW& IBView); // TODO(enlynn): Pass in a gpu_buffer
+	void SetIndexBuffer(D3D12_INDEX_BUFFER_VIEW IBView); // TODO(enlynn): Pass in a gpu_buffer
 
 	// Resource View Bindings
 	void SetShaderResourceView(u32 RootParameter, u32 DescriptorOffset, cpu_descriptor SRVDescriptor);
-	void SetShaderResourceViewInline(u32 RootParameter, ID3D12Resource* Buffer, u64 BufferOffset = 0);
+	void SetShaderResourceViewInline(u32 RootParameter, gpu_resource* Buffer, u64 BufferOffset = 0);
 
 	void SetGraphics32BitConstants(u32 RootParameter, u32 NumConsants, void* Constants);
 	template<typename T> void SetGraphics32BitConstants(u32 RootParameter, T* Constants)
