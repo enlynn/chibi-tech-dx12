@@ -2,3 +2,5 @@
 /.vs
 /.cache/clangd/index
 /content/shaders/out
+/.cache
+/.idea
