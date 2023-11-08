@@ -4,6 +4,7 @@
 #include <math/math.h>
 
 #include "d3d12_common.h"
+#include "gpu_texture.h"
 
 class gpu_resource;
 
@@ -27,20 +28,20 @@ public:
     gpu_render_target() = default;
     gpu_render_target(u32 Width, u32 Height) { mWidth = Width; mHeight = Height; }
 
-    void AttachTexture(attachment_point Slot, gpu_resource* Texture);
+    void AttachTexture(attachment_point Slot, gpu_texture* Texture);
     void DetachTexture(attachment_point Slot);
 
     // Resets the state of the render target (all attached textures are removed)
     void Reset(); 
 
     // Clear all textures using the clear color.
-    void Clear(D3D12_CLEAR_VALUE ClearValue);
+    void Bind(class gpu_command_list* CommandList, D3D12_CLEAR_VALUE* ClearValue, bool ClearDepthStencil = false);
 
     // Resize a RenderTarget based on the width/height. This is done to keep all 
     // attached textures the same dimensions.
-    void Resize(u32 Width, u32 Height);
+    //void Resize(u32 Width, u32 Height);
 
-    const gpu_resource* GetTexture(attachment_point Slot);
+    const gpu_texture* GetTexture(attachment_point Slot);
 
     // Returns a packed array of the image formats for the textures assigned to this
     // Render Target. Particularly useful for creating PSOs.
@@ -62,9 +63,9 @@ public:
 
 private:
     // TODO(enlynn): Ideally, we would not be storing the Resource directly, but instead
-    // be using a texture_id or something equivalent. This is just an implace solution'
+    // be using a texture_id or something equivalent. This is just an in-place solution'
     // until textures are implemented.
-    gpu_resource* mAttachments[int(attachment_point::count)] = {};
+    gpu_texture*  mAttachments[int(attachment_point::count)] = {};
     // The expected width and height of the attached textures
     u32           mWidth  = 0;
     u32           mHeight = 0;

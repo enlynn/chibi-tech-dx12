@@ -11,6 +11,8 @@
 
 #include <util/array.h>
 
+#include <math/math.h>
+
 class gpu_device;
 class gpu_resource;
 
@@ -48,8 +50,13 @@ public:
 	
 	void Close();
 
+    void BindRenderTarget(
+        class gpu_render_target* RenderTarget,
+        f32x4*                   ClearValue,
+        bool                     ClearDepthStencil);
+
 	// Texture Handling
-	void ClearTexture(const gpu_resource& TextureResource, f32 ClearColor[4]);
+	//void ClearTexture(const gpu_resource& TextureResource, f32 ClearColor[4]);
 
 	// For now, assume all subresources should be 
 	void TransitionBarrier(const gpu_resource& Resource, const gpu_transition_barrier& Barrier);

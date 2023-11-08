@@ -2,6 +2,7 @@
 
 #include "gpu_pso.h"
 #include "gpu_root_signature.h"
+#include "gpu_render_target.h"
 
 #include <platform/platform.h>
 
@@ -123,22 +124,6 @@ void gpu_command_list::Reset()
 void gpu_command_list::Close()
 {
 	mHandle->Close();
-}
-
-void gpu_command_list::ClearTexture(const gpu_resource& TextureResource, f32 ClearColor[4])
-{
-	D3D12_RESOURCE_BARRIER Barrier = {};
-	Barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	Barrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	Barrier.Transition.pResource   = TextureResource.AsHandle();
-	Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON; // TODO: I don't think this accurate, but let's see what happens...
-	Barrier.Transition.StateAfter  = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-
-	// Submit barrier?
-
-
-	//mHandle->ClearRenderTargetView(, ClearColor, 0, nullptr);
 }
 
 void 
@@ -398,3 +383,71 @@ gpu_command_list::DrawIndexedInstanced(u32 IndexCountPerInstance, u32 InstanceCo
 
 	mHandle->DrawIndexedInstanced(IndexCountPerInstance, InstanceCount, StartIndexLocation, StartVertexLocation, StartInstanceLocation);
 }
+
+void gpu_command_list::BindRenderTarget(
+    gpu_render_target* RenderTarget,
+    f32x4*             ClearValue,
+    bool               ClearDepthStencil)
+{
+    D3D12_CPU_DESCRIPTOR_HANDLE RTHandles[int(attachment_point::count)];
+    u32 RTHandlesCount = 0;
+
+    // Transition all textures to Render Target
+    ForRange(int, i, int(attachment_point::depth_stencil))
+    {
+        const gpu_texture* Framebuffer = RenderTarget->GetTexture(attachment_point(i));
+        if (Framebuffer)
+        {
+            gpu_transition_barrier ToClearBarrier = {};
+            ToClearBarrier.BeforeState = D3D12_RESOURCE_STATE_COMMON;
+            ToClearBarrier.AfterState  = D3D12_RESOURCE_STATE_RENDER_TARGET;
+            TransitionBarrier(*Framebuffer->GetResource(), ToClearBarrier);
+
+            cpu_descriptor FramebufferRTV = Framebuffer->GetRenderTargetView();
+
+            RTHandles[RTHandlesCount] = FramebufferRTV.GetDescriptorHandle();
+            RTHandlesCount += 1;
+
+            if (ClearValue)
+                mHandle->ClearRenderTargetView(FramebufferRTV.GetDescriptorHandle(), ClearValue->Ptr, 0, nullptr);
+        }
+    }
+
+    // Clear Depth-Stencil if asked for and has a valid Depth Texture
+    D3D12_CPU_DESCRIPTOR_HANDLE  DSView       = {};
+    D3D12_CPU_DESCRIPTOR_HANDLE* DSViewHandle = nullptr;
+
+    const gpu_texture* DepthTexture    = RenderTarget->GetTexture(attachment_point::depth_stencil);
+    if (DepthTexture)
+    {
+        DSView       = DepthTexture->GetDepthStencilView().GetDescriptorHandle();
+        DSViewHandle = &DSView;
+
+        gpu_transition_barrier ToClearBarrier = {};
+        ToClearBarrier.BeforeState = D3D12_RESOURCE_STATE_COMMON;
+        ToClearBarrier.AfterState  = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+        TransitionBarrier(*DepthTexture->GetResource(), ToClearBarrier);
+
+        if (ClearDepthStencil)
+        {
+            D3D12_CLEAR_FLAGS Flags = D3D12_CLEAR_FLAG_DEPTH;
+
+            // Check to see if it is also has stencil
+            D3D12_RESOURCE_DESC Desc = DepthTexture->GetResourceDesc();
+            if (Desc.Format == DXGI_FORMAT_D32_FLOAT_S8X24_UINT || Desc.Format == DXGI_FORMAT_D24_UNORM_S8_UINT)
+                Flags |= D3D12_CLEAR_FLAG_STENCIL;
+
+            // Hard Code the Depth/Stencil Clear Values for now, will pull out if need to manually specify
+            const float Depth   = 1.0f;
+            const int   Stencil = 0;
+
+            mHandle->ClearDepthStencilView(DSView, Flags, Depth, Stencil, 0, nullptr);
+        }
+    }
+
+    mHandle->OMSetRenderTargets(RTHandlesCount, RTHandles, FALSE, DSViewHandle);
+}
+
+
+
+

@@ -87,8 +87,8 @@ int main(int ArgumentCount, char* ArgumentList[])
 		PerFrameTimer.Update(); 
 
 		// Meet the target frame rate so we don't melt the CPU/GPU
-		f64 TargetRefreshRate = ClientWindow.GetMonitorRefreshRate();
-		f64 WorkSecondsElapsed = PerFrameTimer.GetSecondsElapsed();
+		f64 TargetRefreshRate      = ClientWindow.GetMonitorRefreshRate();
+		f64 WorkSecondsElapsed     = PerFrameTimer.GetSecondsElapsed();
 		f64 SecondsElapsedForFrame = WorkSecondsElapsed;
 		if (SecondsElapsedForFrame < TargetRefreshRate)
 		{

@@ -8,12 +8,18 @@ struct gpu_frame_cache;
 class gpu_texture
 {
 public:
+    gpu_texture() = default;
     gpu_texture(gpu_frame_cache* FrameCache, gpu_resource Resource);
 
     void ReleaseUnsafe(gpu_frame_cache* FrameCache);
 
     void Resize(gpu_frame_cache* FrameCache, u32 Width, u32 Height);
     void CreateViews(gpu_frame_cache* FrameCache);
+
+    D3D12_RESOURCE_DESC GetResourceDesc()     const { return mResource.GetResourceDesc(); }
+    const gpu_resource* GetResource()         const { return &mResource;                  }
+    cpu_descriptor      GetRenderTargetView() const { return mRTV;                        }
+    cpu_descriptor      GetDepthStencilView() const { return mDSV;                        }
 
     bool CheckSRVSupport()
     {
@@ -51,7 +57,7 @@ public:
     // TODO(enlynn): bitsperpixel
 
 private:
-    gpu_resource mResource;
+    gpu_resource mResource = {};
 
     //
     // Depending on the type of texture access:
@@ -60,10 +66,10 @@ private:
     // - Shader Resource
     // - UnorderedAccess
     //
-    cpu_descriptor mRTV;
-    cpu_descriptor mDSV;
-    cpu_descriptor mSRV;
-    cpu_descriptor mUAV;
+    cpu_descriptor mRTV = {};
+    cpu_descriptor mDSV = {};
+    cpu_descriptor mSRV = {};
+    cpu_descriptor mUAV = {};
 };
 
 inline bool gpu_texture::IsUAVCompatibleFormat(DXGI_FORMAT format)

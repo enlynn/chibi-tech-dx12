@@ -27,11 +27,6 @@ gpu_buffer         gIndexResource   = {};
 gpu_root_signature gSimpleSignature = {};
 gpu_pso            gSimplePipeline  = {};
 
-class gpu_render_target
-{
-
-};
-
 class gpu_render_pass
 {
     gpu_root_signature mRootSignature;
@@ -65,31 +60,35 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 		// Leave everything else at their defaults for now...
 	};
 
-	gGlobal.mSwapchain = gpu_swapchain(SwapchainInfo, RenderInfo.ClientWindow);
-
-	//
-	// Let's setup the the Per Frame Resources and let Frame 0 be the setup frame
-	//
+    //
+    // Let's setup the the Per Frame Resources and let Frame 0 be the setup frame
+    //
 
     gGlobal.mPerFrameCache = gGlobal.mHeapAllocator.AllocArray<gpu_frame_cache>(gpu_state::cMaxFrameCache, allocation_strategy::default_init);
-	ForRange(int, i, gpu_state::cMaxFrameCache)
-	{
-		gGlobal.mPerFrameCache[i].mGlobal         = &gGlobal;
-		gGlobal.mPerFrameCache[i].mStaleResources = darray<gpu_resource>(gGlobal.mHeapAllocator, 5);
-	}
+    ForRange(int, i, gpu_state::cMaxFrameCache)
+    {
+        gGlobal.mPerFrameCache[i].mGlobal         = &gGlobal;
+        gGlobal.mPerFrameCache[i].mStaleResources = darray<gpu_resource>(gGlobal.mHeapAllocator, 5);
+    }
 
-	gpu_frame_cache* FrameCache = gGlobal.GetFrameCache();
+    gpu_frame_cache* FrameCache = gGlobal.GetFrameCache();
+
+    //
+    // Swapchain Setup
+    //
+
+	gGlobal.mSwapchain = gpu_swapchain(FrameCache, SwapchainInfo, RenderInfo.ClientWindow);
 
 	//
 	// Test Geometry
 	//
-		
+
 	// Let's create a test resource
 	struct vertex { f32 Pos[2]; f32 Col[3]; };
 	vertex Vertices[] = {
-		{ .Pos = { -0.5f, -0.5f }, .Col = { 1.0f, 0.0f, 0.0f } },
-		{ .Pos = {  0.5f, -0.5f }, .Col = { 0.0f, 1.0f, 0.0f } },
-		{ .Pos = {  0.0f,  0.5f }, .Col = { 0.0f, 0.0f, 1.0f } },
+		{ .Pos = { -0.5f, -0.5f }, .Col = { 1.0f, 1.0f, 1.0f  } },
+		{ .Pos = {  0.5f, -0.5f }, .Col = { 0.36f,0.81f,0.98f } },
+		{ .Pos = {  0.0f,  0.5f }, .Col = { 0.96f,0.66f,0.72f } },
 	};
 
 	u16 Indices[] = { 0, 1, 2 };
@@ -175,34 +174,14 @@ SimpleRendererRender()
 	ReleaseStateResources(FrameCache->mStaleResources);
 
 	// Let's render!
-	const gpu_resource&   Backbuffer          = gGlobal.mSwapchain.GetCurrentBackbuffer();
-	const cpu_descriptor& SwapchainDescriptor = gGlobal.mSwapchain.GetCurrentRenderTarget();
+	gpu_render_target* MainRenderTarget = gGlobal.mSwapchain.GetRenderTarget();
+	gpu_command_list*  List             = gGlobal.mGraphicsQueue.GetCommandList();
 
-	gpu_command_list* List = gGlobal.mGraphicsQueue.GetCommandList();
-
-	gpu_transition_barrier ToClearBarrier = {};
-	ToClearBarrier.BeforeState = D3D12_RESOURCE_STATE_COMMON;
-	ToClearBarrier.AfterState  = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	List->TransitionBarrier(Backbuffer, ToClearBarrier);
-
-	f32 ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	List->AsHandle()->ClearRenderTargetView(SwapchainDescriptor.GetDescriptorHandle(), ClearColor, 0, nullptr);
-
-	// Set the render target (hardcode for now) 
-	D3D12_CPU_DESCRIPTOR_HANDLE RtHandles[] = { SwapchainDescriptor.GetDescriptorHandle() };
-	List->AsHandle()->OMSetRenderTargets(1, RtHandles, FALSE, nullptr);
+	f32x4 ClearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+	List->BindRenderTarget(MainRenderTarget, &ClearColor, false);
 
 	// Scissor / Viewport
-	D3D12_RESOURCE_DESC BackbufferDesc = Backbuffer.GetResourceDesc();
-
-	D3D12_VIEWPORT Viewport = {
-		0.0f,                        // TopLeftX, Width  * Bias.x  (Bias.x == 0.0 by default)
-		0.0f,                        // TopLeftY, Height * Bias.y  (Bias.y == 0.0 by default)
-		f32(BackbufferDesc.Width),   // Width,    Width  * Scale.x (Scale.x == 1.0 by default)
-		f32(BackbufferDesc.Height),  // Height,   Height * Scale.y (Scale.y == 1.0 by default)
-		0.0f,                        // MinDepth
-		1.0f                         // MaxDepth
-	};
+	D3D12_VIEWPORT Viewport = MainRenderTarget->GetViewport();
 	List->SetViewport(Viewport);
 
 	D3D12_RECT ScissorRect = {};
@@ -227,10 +206,15 @@ SimpleRendererRender()
 
 	List->DrawIndexedInstanced(gIndexResource.GetIndexCount());
 
-	gpu_transition_barrier ToRenderBarrier = {};
-	ToRenderBarrier.BeforeState = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	ToRenderBarrier.AfterState  = D3D12_RESOURCE_STATE_PRESENT;
-	List->TransitionBarrier(Backbuffer, ToRenderBarrier);
+    {
+        const gpu_texture*  Backbuffer = MainRenderTarget->GetTexture(attachment_point::color0);
+        const gpu_resource* Resource   = Backbuffer->GetResource();
+
+        gpu_transition_barrier ToRenderBarrier = {};
+        ToRenderBarrier.BeforeState = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        ToRenderBarrier.AfterState  = D3D12_RESOURCE_STATE_PRESENT;
+        List->TransitionBarrier(*Resource, ToRenderBarrier);
+    }
 
 	gGlobal.mGraphicsQueue.ExecuteCommandLists(&List);
 
@@ -253,13 +237,13 @@ SimpleRendererDeinit()
 	gSimplePipeline.Release();
 	gSimpleSignature.Release();
 
+    gGlobal.mSwapchain.Release(gGlobal.GetFrameCache());
+
 	// Free any stale resources
 	ForRange(int, i, gpu_state::cMaxFrameCache)
 	{
 		ReleaseStateResources(gGlobal.mPerFrameCache[i].mStaleResources);
 	}
-
-	gGlobal.mSwapchain.Deinit();
 
 	ForRange(u32, i, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES)
 	{

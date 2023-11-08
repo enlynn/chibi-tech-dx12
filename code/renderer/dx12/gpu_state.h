@@ -48,6 +48,12 @@ struct gpu_frame_cache
 
     gpu_device*       GetDevice() const { return &mGlobal->mDevice; }
 
+    void FlushGPU()
+    {
+        mGlobal->mGraphicsQueue.Flush();
+        // TODO(enlynn): Flush the Compute and Copy Queues
+    }
+
 	// Convenience Function to get the active command list
 	// For now, just using the Graphics command list
 	gpu_command_list* GetGraphicsCommandList() { if (!mGraphicsList) { mGraphicsList = mGlobal->mGraphicsQueue.GetCommandList(); } return mGraphicsList; }
