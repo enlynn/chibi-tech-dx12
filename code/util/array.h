@@ -15,7 +15,6 @@ class farray
 public:
 	farray() : mArray(nullptr), mCount(0) {};
 	constexpr farray(T* Array, u64 Count) : mArray(Array), mCount(Count)  {}
-	constexpr farray(T Array[]) : mArray(Array), mCount(ArrayCount(Array)) {}
 
 	farray(const allocator& Allocator, u64 Count)
 	{
@@ -138,6 +137,8 @@ public:
 		mArray     = Allocator.AllocArray<T>(Capacity , allocation_strategy::default_init);
 	}
 
+    const allocator& GetAllocator() const { return mAllocator; }
+
 	void Reset()
 	{
 		ForRange(u64, i, mCount)
@@ -168,10 +169,13 @@ public:
 		assert(Index >= 0);
 		ExpandIfNeeded(mCount + 1);
 
-		for (u64 i = mCount - 1; i <= Index; --i)
-		{
-			mArray[i + 1] = mArray[i];
-		}
+        if (mCount > 0)
+        {
+            for (u64 i = mCount - 1; i >= Index; --i) // THERE IS A BUG HERE. SOLVE IT LATER< I AM TOO SLEEPY
+            {
+                mArray[i + 1] = mArray[i];
+            }
+        }
 
 		mArray[Index] = Element;
 		mCount       += 1;

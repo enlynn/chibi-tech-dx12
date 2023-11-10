@@ -36,7 +36,9 @@ set(UTIL
 	"code/util/bit.h"
 	"code/util/str16.h"     "code/util/str16.cpp" 
 	"code/util/allocator.h" "code/util/allocator.cpp" 
-	"code/util/array.h")
+	"code/util/array.h"
+        code/util/hashmap.h
+		code/util/hashmap.cpp)
 
 set(RENDERER
 	"code/renderer/dx12/d3d12_common.h"
@@ -57,6 +59,9 @@ set(RENDERER
  	"code/renderer/dx12/gpu_state.h"
 	"code/renderer/dx12/gpu_render_target.h"	            "code/renderer/dx12/gpu_render_target.cpp"
 	"code/renderer/dx12/gpu_texture.h"                      "code/renderer/dx12/gpu_texture.cpp"
+		code/renderer/dx12/gpu_resource_state.h
+		code/renderer/dx12/gpu_resource_state.cpp
+		code/renderer/dx12/gpu_renderpass.h
 )
 
 set(SYSTEMS

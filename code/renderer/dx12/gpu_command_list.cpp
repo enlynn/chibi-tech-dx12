@@ -398,11 +398,6 @@ void gpu_command_list::BindRenderTarget(
         const gpu_texture* Framebuffer = RenderTarget->GetTexture(attachment_point(i));
         if (Framebuffer)
         {
-            gpu_transition_barrier ToClearBarrier = {};
-            ToClearBarrier.BeforeState = D3D12_RESOURCE_STATE_COMMON;
-            ToClearBarrier.AfterState  = D3D12_RESOURCE_STATE_RENDER_TARGET;
-            TransitionBarrier(*Framebuffer->GetResource(), ToClearBarrier);
-
             cpu_descriptor FramebufferRTV = Framebuffer->GetRenderTargetView();
 
             RTHandles[RTHandlesCount] = FramebufferRTV.GetDescriptorHandle();
@@ -422,11 +417,6 @@ void gpu_command_list::BindRenderTarget(
     {
         DSView       = DepthTexture->GetDepthStencilView().GetDescriptorHandle();
         DSViewHandle = &DSView;
-
-        gpu_transition_barrier ToClearBarrier = {};
-        ToClearBarrier.BeforeState = D3D12_RESOURCE_STATE_COMMON;
-        ToClearBarrier.AfterState  = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-        TransitionBarrier(*DepthTexture->GetResource(), ToClearBarrier);
 
         if (ClearDepthStencil)
         {

@@ -15,7 +15,7 @@ void DeviceValidationCallback(
     LPCSTR pDescription,
     void* pContext)
 {
-    LogWarn("This is a validation call.");
+    LogWarn("%s", pDescription);
 }
 
 void 

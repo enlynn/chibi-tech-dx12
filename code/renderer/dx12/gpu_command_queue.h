@@ -6,6 +6,8 @@
 
 #include <deque> // for testing
 
+#include <deque>
+
 class gpu_device;
 class gpu_command_list;
 

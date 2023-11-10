@@ -45,7 +45,7 @@ gpu_buffer::CopyBuffer(gpu_frame_cache* FrameCache, void* BufferData, u64 Buffer
 
 			CommandList->UpdateSubresources<1>(
 				Result, UploadResource, 0,
-				0, 1, &SubresourceData
+				0, 1, farray(&SubresourceData, 1)
 			);
 
 			// Add references to resources so they stay in scope until the command list is reset.
@@ -89,6 +89,9 @@ gpu_buffer::CreateByteAdressBuffer(gpu_frame_cache* FrameCache, gpu_byte_address
         // TODO(enlynn):
     }
 
+    // Track the resource state
+    FrameCache->TrackResource(BufferResource, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+
 	return Result;
 }
 
@@ -111,6 +114,9 @@ gpu_buffer::CreateIndexBuffer(gpu_frame_cache* FrameCache, gpu_index_buffer_info
 
 	Result.mStride = (u8)Stride;
 	Result.mCount  = Info.mIndexCount;
+
+    // Track the resource state
+    FrameCache->TrackResource(Result.mResource, D3D12_RESOURCE_STATE_INDEX_BUFFER);
 
 	return Result;
 }

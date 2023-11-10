@@ -110,13 +110,14 @@ PlatformLogSystemLog(log_level LogLevel, const char* File, int Line, const char*
 
 	const char* LevelName = LogLevelNames[u32(LogLevel)];
 
-	char PartialMessage[2048];
+    constexpr int HardcodedMessageSize = 2048;
+	char PartialMessage[HardcodedMessageSize];
 
 	va_list MessageArgs;
 	va_start(MessageArgs, Format);
 
-	int MessageLength = vsnprintf(PartialMessage, 512, Format, MessageArgs);
-	assert(MessageLength < 510); // TODO: Are exceeding hard coded limits, prolly should do something better
+	int MessageLength = vsnprintf(PartialMessage, HardcodedMessageSize, Format, MessageArgs);
+	assert(MessageLength < HardcodedMessageSize); // TODO: Are exceeding hard coded limits, prolly should do something better
 
 	PartialMessage[MessageLength]     = '\n';
 	PartialMessage[MessageLength + 1] = 0;

@@ -107,9 +107,16 @@ void gpu_swapchain::UpdateRenderTargetViews(gpu_frame_cache* FrameCache)
 
         // When resizing the swpachain, we can have any lingering backbuffer images. Have to immediate release
         // the underlying resource.
-        mBackbuffers[i].ReleaseUnsafe(FrameCache);
+        if (mBackbuffers[i].GetResource()->AsHandle())
+        {
+            const gpu_resource* Resource = mBackbuffers[i].GetResource();
+            FrameCache->RemoveTrackedResource(*Resource);
+            mBackbuffers[i].ReleaseUnsafe(FrameCache);
+        }
 
         gpu_resource Backbuffer = gpu_resource(*mInfo.mDevice, D3DBackbuffer, ClearValue);
+        FrameCache->TrackResource(Backbuffer, D3D12_RESOURCE_STATE_COMMON);
+
         mBackbuffers[i] = gpu_texture(FrameCache, Backbuffer);
 
         // Create the Render Target View
@@ -174,8 +181,7 @@ gpu_swapchain::GetRenderTarget()
 u64 
 gpu_swapchain::Present()
 {
-	//const gpu_resource* CurrentBackbuffer = mBackbuffers[mBackbufferIndex].GetResource();
-	const UINT          SyncInterval      = mInfo.mVSyncEnabled ? 1 : 0;
+	const UINT SyncInterval = mInfo.mVSyncEnabled ? 1 : 0;
 
 	u32 PresentFlags = 0;
 	if (SyncInterval == 0)

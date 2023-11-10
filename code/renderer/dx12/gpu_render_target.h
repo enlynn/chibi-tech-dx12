@@ -34,9 +34,6 @@ public:
     // Resets the state of the render target (all attached textures are removed)
     void Reset(); 
 
-    // Clear all textures using the clear color.
-    void Bind(class gpu_command_list* CommandList, D3D12_CLEAR_VALUE* ClearValue, bool ClearDepthStencil = false);
-
     // Resize a RenderTarget based on the width/height. This is done to keep all 
     // attached textures the same dimensions.
     //void Resize(u32 Width, u32 Height);

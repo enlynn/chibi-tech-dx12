@@ -181,6 +181,11 @@ gpu_command_queue::ExecuteCommandLists(farray<gpu_command_list*> CommandLists)
 
 	ForRange(u64, i, CommandLists.Length())
 	{
+        for (const auto& InFlight : mInFlightCommandLists)
+        {
+            assert(InFlight.CmdList != CommandLists[i]);
+        }
+
 		in_flight_list InFlight = { .CmdList = CommandLists[i] , .FenceValue = NextFenceValue };
 		mInFlightCommandLists.PushBack(InFlight);
 	}
@@ -193,6 +198,9 @@ gpu_command_queue::ExecuteCommandLists(farray<gpu_command_list*> CommandLists)
 void              
 gpu_command_queue::ProcessCommandLists()
 {
+    int iterations = 0;
+    gpu_command_list* OldList = nullptr;
+
 	while (mInFlightCommandLists.Length() > 0 && IsFenceComplete(mInFlightCommandLists[u64(0)].FenceValue))
 	{
 		in_flight_list& List = mInFlightCommandLists[u64(0)];
@@ -201,7 +209,10 @@ gpu_command_queue::ProcessCommandLists()
 
 		mAvailableFlightCommandLists[u32(List.CmdList->GetType())].PushBack(List.CmdList);
 
+        OldList = List.CmdList;
 		mInFlightCommandLists.PopFront();
+
+        iterations += 1;
 	}
 }
 

@@ -97,11 +97,14 @@ public:
         UINT64                             RowSizesInBytes[MaxSubresources];
         
         D3D12_RESOURCE_DESC Desc = DestinationResource.GetResourceDesc();
-        mDevice->AsHandle()->GetCopyableFootprints(&Desc, FirstSubresource, NumSubresources, IntermediateOffset, Layouts, NumRows, RowSizesInBytes, &RequiredSize);
+        mDevice->AsHandle()->GetCopyableFootprints(&Desc, FirstSubresource, NumSubresources, IntermediateOffset,
+                                                   farray(Layouts, NumSubresources), farray(NumRows, NumSubresources),
+                                                   farray(RowSizesInBytes, NumSubresources), &RequiredSize);
         
         return UpdateSubresources(
 			DestinationResource, IntermediateResource, FirstSubresource, 
-			NumSubresources, RequiredSize, Layouts, NumRows, RowSizesInBytes, SourceData);
+			NumSubresources, RequiredSize, farray(Layouts, NumSubresources), farray(NumRows, NumSubresources),
+            farray(RowSizesInBytes, NumSubresources), SourceData);
     }
 
 	//Descriptor Binding

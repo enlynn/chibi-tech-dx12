@@ -47,6 +47,8 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 	gGlobal.mDevice.Init();
 	gGlobal.mGraphicsQueue = gpu_command_queue(gGlobal.mHeapAllocator, gpu_command_queue_type::graphics, &gGlobal.mDevice);
 
+    gGlobal.mGlobalResourceState.mKnownStates = gpu_resource_state_map(gGlobal.mHeapAllocator, 10);
+
 	// Create the CPU Descriptor Allocators
 	ForRange(u32, i, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES)
 	{
@@ -69,6 +71,7 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
     {
         gGlobal.mPerFrameCache[i].mGlobal         = &gGlobal;
         gGlobal.mPerFrameCache[i].mStaleResources = darray<gpu_resource>(gGlobal.mHeapAllocator, 5);
+        gGlobal.mPerFrameCache[i].mResourceStateTracker = gpu_resource_state_tracker(gGlobal.mHeapAllocator);
     }
 
     gpu_frame_cache* FrameCache = gGlobal.GetFrameCache();
@@ -93,8 +96,6 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 
 	u16 Indices[] = { 0, 1, 2 };
 
-	gpu_command_list* UploadList = FrameCache->GetCopyCommandList();
-
     gpu_byte_address_buffer_info VertexInfo = {};
     VertexInfo.mCount                       = ArrayCount(Vertices);
     VertexInfo.mStride                      = sizeof(vertex);
@@ -108,7 +109,7 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
     gIndexResource = gpu_buffer::CreateIndexBuffer(FrameCache, IndexInfo);
 
     FrameCache->SubmitCopyCommandList();
-	gGlobal.mGraphicsQueue.Flush(); // Forcibly upload all of the geometry (for now)
+    FrameCache->FlushGPU(); // Forcibly upload all of the geometry (for now)
 
 	//
 	// Register the builtin-shader resource and load 
@@ -166,6 +167,9 @@ void
 SimpleRendererRender()
 {
 	gpu_frame_cache* FrameCache = gGlobal.GetFrameCache();
+
+    // Reset the Per-Frame State Tracker
+    FrameCache->mResourceStateTracker.Reset();
 	
 	// Update any pending command lists
 	gGlobal.mGraphicsQueue.ProcessCommandLists();
@@ -175,7 +179,12 @@ SimpleRendererRender()
 
 	// Let's render!
 	gpu_render_target* MainRenderTarget = gGlobal.mSwapchain.GetRenderTarget();
-	gpu_command_list*  List             = gGlobal.mGraphicsQueue.GetCommandList();
+	gpu_command_list*  List             = FrameCache->GetGraphicsCommandList();
+
+    {
+        const gpu_texture* Framebuffer0 = MainRenderTarget->GetTexture(attachment_point::color0);
+        FrameCache->TransitionResource(Framebuffer0->GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+    }
 
 	f32x4 ClearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 	List->BindRenderTarget(MainRenderTarget, &ClearColor, false);
@@ -204,19 +213,18 @@ SimpleRendererRender()
 	vertex_draw_constants Constants = {};
 	List->SetGraphics32BitConstants(u32(triangle_root_parameter::per_draw), &Constants);
 
+    FrameCache->FlushResourceBarriers(List); // Flush barriers before drawing
+
 	List->DrawIndexedInstanced(gIndexResource.GetIndexCount());
 
-    {
-        const gpu_texture*  Backbuffer = MainRenderTarget->GetTexture(attachment_point::color0);
-        const gpu_resource* Resource   = Backbuffer->GetResource();
-
-        gpu_transition_barrier ToRenderBarrier = {};
-        ToRenderBarrier.BeforeState = D3D12_RESOURCE_STATE_RENDER_TARGET;
-        ToRenderBarrier.AfterState  = D3D12_RESOURCE_STATE_PRESENT;
-        List->TransitionBarrier(*Resource, ToRenderBarrier);
+    { // Place swapchain image back into PRESENT state
+        const gpu_texture* Framebuffer0 = MainRenderTarget->GetTexture(attachment_point::color0);
+        FrameCache->TransitionResource(Framebuffer0->GetResource(), D3D12_RESOURCE_STATE_PRESENT);
     }
 
-	gGlobal.mGraphicsQueue.ExecuteCommandLists(&List);
+    FrameCache->FlushResourceBarriers(List); // One final flush
+
+	FrameCache->SubmitGraphicsCommandList();
 
 	gGlobal.mSwapchain.Present();
 
