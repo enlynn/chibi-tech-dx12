@@ -1,100 +1,11 @@
 #pragma once
 
+#include <initializer_list>
+
 #include <types.h>
 #include <util/str8.h>
 
 #include "d3d12_common.h"
-#include "renderer/dx12/d3d12_common.h"
-#include "renderer/dx12/gpu_root_signature.h"
-
-enum class gpu_fill_mode : u8
-{
-    wireframe,
-    solid,
-};
- 
-enum class gpu_cull_mode  : u8
-{
-    none,
-    front,
-    back,
-};
-
-enum class gpu_format : u8
-{
-    r32_float,
-    r32g32_float,
-    r32g32b32_float,
-    r32g32b32a32_float,
-    r8g8b8a8_unorm,
-    
-    // TODO(enlynn): Others on a as-needed basis
-    
-    d32_float, // depth format
-};
-
-enum class gpu_input_class : u8
-{
-    per_vertex,
-    per_instance,
-};
-
-enum class gpu_topology
-{
-    undefined,
-    point,
-    line,
-    triangle,
-    patch,
-};
-
-/* Specifies multisampling settings */
-struct gpu_sample_desc
-{
-    u32 mCount   = 1;
-    u32 mQuality = 0;
-};
-
-struct gpu_rasterizer
-{
-    gpu_fill_mode mFillMode              = gpu_fill_mode::solid;
-    gpu_cull_mode mCullMode              = gpu_cull_mode::none;
-    bool          mFrontCounterClockwise = true;
-    /* Omit depth bias? */
-    /* Omit depth bias clamp? */
-    /* Omit slope scaled depth bias? */
-    bool          mDepthClipEnabled      = false;
-    bool          mMultiSampleEnabled    = false;
-    bool          mAntiAliasedEnabled    = false;
-    u32           mForcedSampleCount     = false;
-    /* Omit conservative raster mode */
-};
-
-struct gpu_input_element_desc
-{
-    // 
-    // Acceptable Semantic Names: 
-    // - BINORMAL[n]      | Binormal                         | float4
-    // - BLENDINDICES[n]  | Blend indices                    | uint
-    // - BLENDWEIGHT[n]   | Blend weights                    | float
-    // - COLOR[n]         | Diffuse and specular color       | float4
-    // - NORMAL[n]        | Normal vector                    | float4
-    // - POSITION[n]      | Vertex position in object space. | float4
-    // - POSITIONT        | Transformed vertex position.     | float4
-    // - PSIZE[n]         | Point size                       | float
-    // - TANGENT[n]       | Tangent                          | float4
-    // - TEXCOORD[n]      | Texture Coordinates              | float4
-    // 
-    // [n] is an optional integer between 0 and the number of resources supported. For example, POSITION0, TEXCOORD1.
-    //
-    istr8            SemanticName      = "POSITION0";
-    u32              SemanticIndex     = 0;
-    gpu_format       Format            = gpu_format::r32g32b32_float;
-    u32              InputSlot         = 0;
-    u32              AlignedByteOffset = 0;
-    bool             IsPerVertex       = false; // If false then is Per Instance
-    u32              InputStepRate     = 0;
-};
 
 enum class gpu_raster_state : u8
 {
@@ -135,32 +46,11 @@ D3D12_DEPTH_STENCIL_DESC GetDepthStencilState(gpu_depth_stencil_state Type);
 // Get a default description of the blend state
 D3D12_BLEND_DESC GetBlendState(gpu_blend_state Type);
 
-struct gpu_pso_info
-{
-    const class gpu_root_signature& mRootSignature;
-    // Shaders used for this pipeline
-    D3D12_SHADER_BYTECODE           mVertexShader        = {};
-    D3D12_SHADER_BYTECODE           mPixelShader         = {};
-    // List of Render Targets used for this pipeline
-    D3D12_RT_FORMAT_ARRAY           mRenderTargetFormats = {};
-    D3D12_RASTERIZER_DESC           mRasterizer          = GetRasterizerState(gpu_raster_state::default_raster);
-    D3D12_DEPTH_STENCIL_DESC        mDepth               = GetDepthStencilState(gpu_depth_stencil_state::disabled);
-    D3D12_BLEND_DESC                mBlend               = GetBlendState(gpu_blend_state::disabled);
-    // Vertex Topology
-    gpu_topology                    mTopology            = gpu_topology::triangle;
-    // Optional, only needed if depth stencil state is used
-    DXGI_FORMAT                     mDepthFormat         = DXGI_FORMAT_UNKNOWN;
-    // Optional, only needed if using multisampling
-    gpu_sample_desc                 mSampleDesc          = {};
-    // List of Vertex Inputs for the pipeline. Since bindless is preferred, this will usually be empty.
-    farray<gpu_input_element_desc>  mInputElements       = {};
-};
-
 class gpu_pso 
 {
 public:
     gpu_pso() = default;
-    gpu_pso(class gpu_device& Device, gpu_pso_info& Info);
+    gpu_pso(ID3D12PipelineState* State) : mHandle(State) {}
 
     void Release() { if (mHandle) ComSafeRelease(mHandle); }
 
@@ -168,4 +58,148 @@ public:
 
 private:
     struct ID3D12PipelineState *mHandle = nullptr;
+};
+
+//
+// Pipeline State Stream Implementation for Sub-Object Types
+//
+
+#define DEFINE_PSO_SUB_OBJECT(Name, Suboject, Struct)           \
+    struct alignas(void*) Name {                                \
+        D3D12_PIPELINE_STATE_SUBOBJECT_TYPE mType   = Suboject; \
+        Struct                              mObject = {};       \
+    };
+
+DEFINE_PSO_SUB_OBJECT(gpu_pso_root_signature,       D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_ROOT_SIGNATURE,        ID3D12RootSignature*);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_vertex_shader,        D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_VS,                    D3D12_SHADER_BYTECODE);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_pixel_shader,         D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PS,                    D3D12_SHADER_BYTECODE);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_compute_shader,       D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_CS,                    D3D12_SHADER_BYTECODE);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_domain_shader,        D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DS,                    D3D12_SHADER_BYTECODE);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_hull_shader,          D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_HS,                    D3D12_SHADER_BYTECODE);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_geometry_shader,      D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_GS,                    D3D12_SHADER_BYTECODE);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_amplification_shader, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_AS,                    D3D12_SHADER_BYTECODE);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_mesh_shader,          D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_MS,                    D3D12_SHADER_BYTECODE);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_stream_output,        D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_STREAM_OUTPUT,         D3D12_STREAM_OUTPUT_DESC);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_blend,                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_BLEND,                 D3D12_BLEND_DESC);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_sample_mask,          D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_MASK,           UINT);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_raster_state,         D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER,            D3D12_RASTERIZER_DESC);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_depth_stencil,        D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL,         D3D12_DEPTH_STENCIL_DESC);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_input_layout,         D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_INPUT_LAYOUT,          D3D12_INPUT_LAYOUT_DESC);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_ib_strip_cut,         D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_IB_STRIP_CUT_VALUE,    D3D12_INDEX_BUFFER_STRIP_CUT_VALUE);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_primitive_topology,   D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PRIMITIVE_TOPOLOGY,    D3D12_PRIMITIVE_TOPOLOGY_TYPE);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_rtv_formats,          D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS, D3D12_RT_FORMAT_ARRAY);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_depth_stencil_format, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL_FORMAT,  DXGI_FORMAT);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_sample_desc,          D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_DESC,           DXGI_SAMPLE_DESC);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_nodemask,             D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_NODE_MASK,             UINT);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_cached_pso,           D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_CACHED_PSO,            D3D12_CACHED_PIPELINE_STATE);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_type_flags,           D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_FLAGS,                 D3D12_PIPELINE_STATE_FLAGS);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_depth_stencil1,       D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL1,        D3D12_DEPTH_STENCIL_DESC1);
+DEFINE_PSO_SUB_OBJECT(gpu_pso_view_instancing,      D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_VIEW_INSTANCING,       D3D12_VIEW_INSTANCING_DESC);
+// D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_MAX_VALID
+
+//
+// An Example PSO Creation using the Test Triangle Pipeline
+//
+// gpu_graphics_pso_builder PsoBuilder = gpu_graphics_pso_builder::Builder();
+// PsoBuilder.SetRootSignature(RootSig)
+//           .SetVertexShader(VertexShader)
+//           .SetPixelShader(PixelShader)
+//           .SetRTVFormats(1, { SwapchainFormat });
+// gpu_pso PSO = PsoBuilder.Compile(FrameCache);
+//
+
+// Create Graphics PSO
+struct gpu_graphics_pso_builder
+{
+    static gpu_graphics_pso_builder Builder();            // Retrieved a default initialized struct
+    gpu_pso Compile(struct gpu_frame_cache* FrameCache);  // Compiles the PSO, returning the new PSO handle
+
+    gpu_graphics_pso_builder& SetRootSignature(class gpu_root_signature* RootSignature);
+
+    // Set Shader Stages, Vertex and Pixel Stages are required.
+    gpu_graphics_pso_builder& SetVertexShader(  struct shader_resource* VertexShader);
+    gpu_graphics_pso_builder& SetPixelShader(   struct shader_resource* PixelShader);
+    gpu_graphics_pso_builder& SetHullShader(    struct shader_resource* HullShader);
+    gpu_graphics_pso_builder& SetDomainShader(  struct shader_resource* DomainShader);
+    gpu_graphics_pso_builder& SetGeometryShader(struct shader_resource* GeometryShader);
+
+    // Blend State
+    gpu_graphics_pso_builder& SetDefaultBlendState(gpu_blend_state BlendState); // Selects a default configuration for blending
+    gpu_graphics_pso_builder& SetBlendState(D3D12_BLEND_DESC BlendDesc);
+
+    // Rasterizer State
+    gpu_graphics_pso_builder& SetDefaultRasterState(gpu_raster_state RasterState); // Selects a default configuration for rasterization
+    gpu_graphics_pso_builder& SetRasterState(D3D12_RASTERIZER_DESC RasterDesc);
+
+    // Depth Stencil State
+    gpu_graphics_pso_builder& SetDefaultDepthStencilState(gpu_depth_stencil_state DepthStencil, DXGI_FORMAT DepthFormat); // Selects a default configuration for depth/stencil
+    gpu_graphics_pso_builder& SetDepthStencilState(D3D12_DEPTH_STENCIL_DESC DepthStencilDesc, DXGI_FORMAT DepthFormat);
+    gpu_graphics_pso_builder& SetDepthFormat(DXGI_FORMAT DepthFormat);
+
+        // Set Render Target Formats
+    gpu_graphics_pso_builder& SetRenderTargetFormats(u32 Count, std::initializer_list<DXGI_FORMAT> Formats);
+
+    gpu_graphics_pso_builder& SetSampleQuality(u32 Count = 1, u32 Quality = 0);
+    gpu_graphics_pso_builder& SetTopology(D3D12_PRIMITIVE_TOPOLOGY_TYPE Topology);
+
+    gpu_pso_root_signature       mRootSignature;
+    gpu_pso_vertex_shader        mVertexShader;
+    gpu_pso_pixel_shader         mPixelShader;
+    gpu_pso_domain_shader        mDomainShader;
+    gpu_pso_hull_shader          mHullShader;
+    gpu_pso_geometry_shader      mGeometryShader;
+    gpu_pso_blend                mBlend;
+    gpu_pso_raster_state         mRasterizer;
+    gpu_pso_depth_stencil        mDepthStencil;
+    gpu_pso_primitive_topology   mTopology;
+    gpu_pso_rtv_formats          mRenderTargetFormats;
+    gpu_pso_depth_stencil_format mDepthFormat;
+    gpu_pso_sample_desc          mSampleDesc;
+
+    // NOTE(enlynn): gpu_pso_sample_mask
+    // NOTE(enlynn): gpu_pso_ib_strip_cut
+    // NOTE(enlynn): gpu_pso_cached_pso
+    // NOTE(enlynn): gpu_pso_type_flags, specifies debug.
+    // NOTE(enlynn): gpu_pso_depth_stencil1, more advanced version of depth_stencil
+    // NOTE(enlynn): gpu_pso_view_instancing
+};
+
+// Create Compute PSO
+
+struct gpu_compute_pso_builder
+{
+    static gpu_compute_pso_builder Builder();             // Retrieved a default initialized struct
+    gpu_pso Compile(struct gpu_frame_cache* FrameCache);  // Compiles the PSO, returning the new handle
+
+
+    gpu_pso_root_signature mRootSignature; //Required.
+    gpu_pso_compute_shader mComputeShader; //Required.
+
+    // NOTE(enlynn): gpu_pso_cached_pso
+    // NOTE(enlynn): gpu_pso_type_flags, specifies debug.
+};
+
+struct gpu_mesh_pso_builder
+{
+    static gpu_mesh_pso_builder Builder();                // Retrieved a default initialized struct
+    gpu_pso Compile(struct gpu_frame_cache* FrameCache);  // Compiles the PSO, returning the new handle
+
+    gpu_pso_root_signature       mRootSignature;          //Required.
+    gpu_pso_mesh_shader          mMeshShader;             //Required.
+    gpu_pso_amplification_shader mAmplificationShader;
+    gpu_pso_pixel_shader         mPixelShader;
+    gpu_pso_blend                mBlend;
+    gpu_pso_raster_state         mRasterizer;
+    gpu_pso_depth_stencil        mDepthStencil;
+    gpu_pso_primitive_topology   mTopology;
+    gpu_pso_rtv_formats          mRenderTargetFormats;
+    gpu_pso_depth_stencil_format mDepthFormat;
+    gpu_pso_sample_desc          mSampleDesc;
+
+    // NOTE(enlynn): gpu_pso_sample_mask
+    // NOTE(enlynn): gpu_pso_ib_strip_cut
+    // NOTE(enlynn): gpu_pso_cached_pso
+    // NOTE(enlynn): gpu_pso_type_flags, specifies debug.
+    // NOTE(enlynn): gpu_pso_depth_stencil1, more advanced version of depth_stencil
+    // NOTE(enlynn): gpu_pso_view_instancing
 };

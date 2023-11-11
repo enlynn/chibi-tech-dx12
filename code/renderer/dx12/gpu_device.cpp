@@ -26,7 +26,13 @@ gpu_device::Init()
 
 	// Create the device
 
-	AssertHr(D3D12CreateDevice(mAdapter, gMinFeatureLevel, ComCast(&mDevice)));
+    // Create the initial device
+    ID3D12Device* Device1 = nullptr;
+	AssertHr(D3D12CreateDevice(mAdapter, gMinFeatureLevel, ComCast(&Device1)));
+
+    // And now cast it to ID3D12Device2
+    AssertHr(Device1->QueryInterface(ComCast(&mDevice)));
+    ComSafeRelease(Device1);
 
 	ID3D12InfoQueue* InfoQueue = nullptr;
 	if (SUCCEEDED(mDevice->QueryInterface(ComCast(&InfoQueue))))

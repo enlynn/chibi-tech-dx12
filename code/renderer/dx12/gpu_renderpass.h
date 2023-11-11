@@ -46,12 +46,15 @@
 // let's resource state transitions be explicit, while allowing for the implementation to batch barriers.
 //
 
+using framebuffer = class gpu_texture*;
+
 class renderpass 
 {
 public:
     renderpass() = default;
-    renderpass(const gpu_pso_info& PsoInfo, const gpu_root_signature& RootSignature);
 
+    virtual void OnInit(struct gpu_frame_cache* FrameCache)   = 0;
+    virtual void OnRender(struct gpu_frame_cache* FrameCache) = 0;
 
 private:
     gpu_pso            mPso           = {};
@@ -62,5 +65,14 @@ private:
 // Example Implementation of a renderpass
 class draw_quad : public renderpass
 {
+public:
     draw_quad() = default;
+
+    virtual void OnInit(struct gpu_frame_cache* FrameCache)   override;
+    virtual void OnRender(struct gpu_frame_cache* FrameCache) override;
+
+private:
+
+    static constexpr const char* ShaderName        = "TestTriangle";
+    static constexpr const char* RootSignatureName = "Test Triangle Name";
 };

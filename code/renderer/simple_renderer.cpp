@@ -137,16 +137,17 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 	}
 
 	{ // Create a simple pso
-		gpu_pso_info Info = { .mRootSignature = gSimpleSignature };
-		Info.mVertexShader = VertexShader.GetShaderBytecode();
-		Info.mPixelShader  = PixelShader.GetShaderBytecode();
-
 		D3D12_RT_FORMAT_ARRAY PsoRTFormats = {};
 		PsoRTFormats.NumRenderTargets = 1;
 		PsoRTFormats.RTFormats[0]     = gGlobal.mSwapchain.GetSwapchainFormat();
-		Info.mRenderTargetFormats     = PsoRTFormats;
 
-		gSimplePipeline = gpu_pso(gGlobal.mDevice, Info);
+        gpu_graphics_pso_builder Builder = gpu_graphics_pso_builder::Builder();
+        Builder.SetRootSignature(&gSimpleSignature)
+            .SetVertexShader(&VertexShader)
+            .SetPixelShader(&PixelShader)
+            .SetRenderTargetFormats(1, { gGlobal.mSwapchain.GetSwapchainFormat() });
+
+        gSimplePipeline = Builder.Compile(FrameCache);
 	}
 
 	gGlobal.mFrameCount += 1;

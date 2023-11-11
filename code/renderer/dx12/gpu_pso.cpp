@@ -1,8 +1,9 @@
 #include "gpu_pso.h"
 #include "gpu_device.h"
 #include "gpu_root_signature.h"
-#include "renderer/dx12/d3d12_common.h"
-#include "renderer/dx12/gpu_pso.h"
+#include "gpu_shader_utils.h"
+#include "gpu_state.h"
+#include "gpu_device.h"
 
 // SOURCE for constants: 
 // https://github.com/microsoft/DirectX-Graphics-Samples/blob/master/MiniEngine/Core/GraphicsCommon.cpp
@@ -427,47 +428,198 @@ GetBlendState(gpu_blend_state type)
     return Result;
 }
 
-constexpr D3D12_PRIMITIVE_TOPOLOGY_TYPE 
-ToD3DTopologyType(gpu_topology top)
+//
+// State Stream Implementation: Graphics Pipeline
+//
+
+gpu_graphics_pso_builder gpu_graphics_pso_builder::Builder()
 {
-    D3D12_PRIMITIVE_TOPOLOGY_TYPE result = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
-    if (top == gpu_topology::point)
-        result = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
-    else if (top == gpu_topology::line)
-        result = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
-    else if (top == gpu_topology::triangle)
-        result = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    else if (top == gpu_topology::patch)
-        result = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
-    return result;
+    gpu_graphics_pso_builder Result = {};
+
+    Result.mRootSignature = {};
+
+    Result.mVertexShader = {};
+    Result.mPixelShader  = {};
+
+    Result.mDomainShader   = {};
+    Result.mHullShader     = {};
+    Result.mGeometryShader = {};
+
+    Result.mBlend = {};
+    Result.mBlend.mObject = GetBlendState(gpu_blend_state::disabled);
+
+    Result.mRasterizer = {};
+    Result.mRasterizer.mObject = GetRasterizerState(gpu_raster_state::default_raster);
+
+    Result.mDepthStencil = {};
+    Result.mDepthStencil.mObject = GetDepthStencilState(gpu_depth_stencil_state::disabled);
+
+    Result.mTopology = {};
+    Result.mTopology.mObject = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+    Result.mRenderTargetFormats = {};
+    Result.mRenderTargetFormats.mObject.NumRenderTargets = 0;
+
+    Result.mDepthFormat = {}; // DXGI_FORMAT_UNKNOWN
+
+    Result.mSampleDesc = {};
+    Result.mSampleDesc.mObject.Count   = 1;
+    Result.mSampleDesc.mObject.Quality = 0;
+
+    return Result;
 }
 
-gpu_pso::gpu_pso(gpu_device& Device, gpu_pso_info& Info)
+gpu_pso gpu_graphics_pso_builder::Compile(gpu_frame_cache* FrameCache)
 {
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC Desc{};
-    Desc.pRootSignature    = Info.mRootSignature.AsHandle();
-    Desc.SampleMask        = UINT_MAX;
-    Desc.DepthStencilState = Info.mDepth;
-    Desc.RasterizerState   = Info.mRasterizer;
-    Desc.BlendState        = Info.mBlend;
-    Desc.VS                = Info.mVertexShader;
-    Desc.PS                = Info.mPixelShader;
-    
-    // Set the remaining blend states to the one specified in Info
-    for (UINT i = 1; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
-        Desc.BlendState.RenderTarget[i] = Desc.BlendState.RenderTarget[0];
+    D3D12_PIPELINE_STATE_STREAM_DESC PSSDesc = {
+        .SizeInBytes                   = sizeof(gpu_graphics_pso_builder),
+        .pPipelineStateSubobjectStream = this
+    };
 
-    assert(Info.mInputElements.Length() == 0 && "Not handling input elements for a PSO");
-    Desc.InputLayout = { nullptr, 0 };
+    gpu_device* Device = FrameCache->GetDevice();
 
-    Desc.DSVFormat             = Info.mDepthFormat;
-    Desc.PrimitiveTopologyType = ToD3DTopologyType(Info.mTopology);
-    Desc.SampleDesc.Count      = Info.mSampleDesc.mCount;
-    Desc.SampleDesc.Quality    = Info.mSampleDesc.mQuality;
+    ID3D12PipelineState* PSO = nullptr;
+    AssertHr(Device->AsHandle()->CreatePipelineState(&PSSDesc, ComCast(&PSO)));
 
-    Desc.NumRenderTargets = Info.mRenderTargetFormats.NumRenderTargets;
-    for (u32 i = 0; i < Desc.NumRenderTargets; ++i)
-        Desc.RTVFormats[i] = Info.mRenderTargetFormats.RTFormats[i];
+    return gpu_pso(PSO);
+}
 
-    AssertHr(Device.AsHandle()->CreateGraphicsPipelineState(&Desc, ComCast(&mHandle)));
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetRootSignature(gpu_root_signature* RootSignature)
+{
+    mRootSignature.mObject = RootSignature->AsHandle();
+    return *this;
+}
+
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetVertexShader(shader_resource* VertexShader)
+{
+    mVertexShader.mObject = VertexShader->GetShaderBytecode();
+    return *this;
+}
+
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetPixelShader(shader_resource* PixelShader)
+{
+    mPixelShader.mObject = PixelShader->GetShaderBytecode();
+    return *this;
+}
+
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetHullShader(shader_resource* HullShader)
+{
+    mHullShader.mObject = HullShader->GetShaderBytecode();
+    return *this;
+}
+
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetDomainShader(shader_resource* DomainShader)
+{
+    mDomainShader.mObject = DomainShader->GetShaderBytecode();
+    return *this;
+}
+
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetGeometryShader(shader_resource* GeometryShader)
+{
+    mGeometryShader.mObject = GeometryShader->GetShaderBytecode();
+    return *this;
+}
+
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetDefaultBlendState(gpu_blend_state BlendState)
+{
+    mBlend.mObject = GetBlendState(BlendState);
+    return *this;
+}
+
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetBlendState(D3D12_BLEND_DESC BlendDesc)
+{
+    mBlend.mObject = BlendDesc;
+    return *this;
+}
+
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetDefaultRasterState(gpu_raster_state RasterState)
+{
+    mRasterizer.mObject = GetRasterizerState(RasterState);
+    return *this;
+}
+
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetRasterState(D3D12_RASTERIZER_DESC RasterDesc)
+{
+    mRasterizer.mObject = RasterDesc;
+    return *this;
+}
+
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetDefaultDepthStencilState(gpu_depth_stencil_state DepthStencil, DXGI_FORMAT DepthFormat)
+{
+    mDepthStencil.mObject = GetDepthStencilState(DepthStencil);
+    mDepthFormat.mObject  = DepthFormat;
+    return *this;
+}
+
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetDepthStencilState(D3D12_DEPTH_STENCIL_DESC DepthStencilDesc, DXGI_FORMAT DepthFormat)
+{
+    mDepthStencil.mObject = DepthStencilDesc;
+    mDepthFormat.mObject  = DepthFormat;
+    return *this;
+}
+
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetDepthFormat(DXGI_FORMAT DepthFormat)
+{
+    mDepthFormat.mObject  = DepthFormat;
+    return *this;
+}
+
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetRenderTargetFormats(u32 Count, std::initializer_list<DXGI_FORMAT> Formats)
+{
+    assert(Formats.size() <= 8 && "Cannot create PSO with more than 8 Render Target Formats");
+    mRenderTargetFormats.mObject.NumRenderTargets = Count;
+
+    int i = 0;
+    for (const auto& RTFormat : Formats)
+    {
+        mRenderTargetFormats.mObject.RTFormats[i] = RTFormat;
+        i += 1;
+    }
+
+    return *this;
+}
+
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetSampleQuality(u32 Count, u32 Quality)
+{
+    mSampleDesc.mObject.Count   = Count;
+    mSampleDesc.mObject.Quality = Quality;
+    return *this;
+}
+
+gpu_graphics_pso_builder& gpu_graphics_pso_builder::SetTopology(D3D12_PRIMITIVE_TOPOLOGY_TYPE Topology)
+{
+    mTopology.mObject = Topology;
+    return *this;
+}
+
+//
+// State Stream Implementation: Compute Pipeline
+//
+
+gpu_compute_pso_builder gpu_compute_pso_builder::Builder()
+{
+    assert(false && "gpu_compute_pso_builder::Builder Unimplemented");
+    return {};
+}
+
+gpu_pso gpu_compute_pso_builder::Compile(struct gpu_frame_cache* FrameCache)
+{
+    assert(false && "gpu_compute_pso_builder::Compile Unimplemented");
+    return {};
+}
+
+//
+// State Stream Implementation: Mesh Pipeline
+//
+
+gpu_mesh_pso_builder gpu_mesh_pso_builder::Builder()
+{
+    assert(false && "gpu_mesh_pso_builder::Builder Unimplemented");
+    return {};
+}
+
+gpu_pso gpu_mesh_pso_builder::Compile(struct gpu_frame_cache* FrameCache)
+{
+    assert(false && "gpu_mesh_pso_builder::Compile Unimplemented");
+    return {};
 }

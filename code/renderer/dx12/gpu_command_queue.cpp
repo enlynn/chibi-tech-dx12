@@ -150,6 +150,8 @@ gpu_command_queue::GetCommandList(gpu_command_list_type Type)
 	{
 		Result = mAvailableFlightCommandLists[TypeIndex][u64(0)]; // The List was reset when it became available.
 		mAvailableFlightCommandLists[TypeIndex].PopFront();
+
+        Result->Reset(); // Let the command list free any resources it was holding onto
 	}
 	else
 	{
@@ -210,8 +212,6 @@ gpu_command_queue::ProcessCommandLists()
 	while (mInFlightCommandLists.Length() > 0 && IsFenceComplete(mInFlightCommandLists[u64(0)].FenceValue))
 	{
 		in_flight_list& List = mInFlightCommandLists[u64(0)];
-
-		List.CmdList->Reset(); // Let the command list free any resources it was holding onto
 
 		mAvailableFlightCommandLists[u32(List.CmdList->GetType())].PushBack(List.CmdList);
 

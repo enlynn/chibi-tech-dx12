@@ -28,7 +28,7 @@ public:
 	void ReportLiveObjects();
 
 	// Cast to the internal ID3D12Device handle
-	constexpr ID3D12Device*  AsHandle()  const { return mDevice;  }
+	constexpr ID3D12Device2* AsHandle()  const { return mDevice;  }
 	constexpr IDXGIAdapter1* AsAdapter() const { return mAdapter; }
 
 	ID3D12DescriptorHeap* CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 Count, bool IsShaderVisible);
@@ -36,7 +36,7 @@ public:
     gpu_resource          CreateCommittedResource(commited_resource_info& Info);
 
 private:
-	ID3D12Device*  mDevice                = nullptr;
+	ID3D12Device2* mDevice                = nullptr;
 	IDXGIAdapter1* mAdapter               = nullptr;
 	u32            mSupportedFeatureLevel = 0;
 

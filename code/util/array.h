@@ -169,12 +169,9 @@ public:
 		assert(Index >= 0);
 		ExpandIfNeeded(mCount + 1);
 
-        if (mCount > 0)
+        if (Index != mCount)
         {
-            for (u64 i = mCount - 1; i >= Index; --i) // THERE IS A BUG HERE. SOLVE IT LATER< I AM TOO SLEEPY
-            {
-                mArray[i + 1] = mArray[i];
-            }
+            memmove(&mArray[Index + 1], &mArray[Index], sizeof(T) * (mCount - 1 - Index));
         }
 
 		mArray[Index] = Element;
