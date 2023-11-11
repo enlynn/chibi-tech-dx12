@@ -195,6 +195,12 @@ gpu_command_queue::ExecuteCommandLists(farray<gpu_command_list*> CommandLists)
 	return NextFenceValue;
 }
 
+void gpu_command_queue::SubmitEmptyCommandList(gpu_command_list* CommandList)
+{
+    CommandList->Close();
+    mAvailableFlightCommandLists[u32(CommandList->GetType())].PushBack(CommandList);
+}
+
 void              
 gpu_command_queue::ProcessCommandLists()
 {

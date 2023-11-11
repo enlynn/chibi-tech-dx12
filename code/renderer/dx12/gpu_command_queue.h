@@ -50,7 +50,9 @@ public:
 	// Command Lists
 	gpu_command_list* GetCommandList(gpu_command_list_type Type = gpu_command_list_type::graphics);
 	u64               ExecuteCommandLists(farray<gpu_command_list*> CommandLists);
-	void              ProcessCommandLists();                                                        // Call once per frame, checks if in-flight commands lists are completed
+	void              ProcessCommandLists(); // Call once per frame, checks if in-flight commands lists are completed
+    void              SubmitEmptyCommandList(gpu_command_list* CommandList);
+
 
 	// Synchronization
 	u64               Signal();                                  // (nonblocking) signals the fence and returns its current value

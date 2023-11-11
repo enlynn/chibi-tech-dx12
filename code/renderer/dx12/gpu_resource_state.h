@@ -91,6 +91,3 @@ struct gpu_global_resource_state
     void AddResource(class gpu_resource& Resource, D3D12_RESOURCE_STATES InitialState, UINT SubResource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
     void RemoveResource(const class gpu_resource& Resource);
 };
-
-void ResourceStateTrackerInit(const allocator& Allocator);
-void ResourceStateTrackerDeinit();

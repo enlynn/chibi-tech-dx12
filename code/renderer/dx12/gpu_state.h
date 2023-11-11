@@ -88,6 +88,7 @@ struct gpu_frame_cache
             }
             else
             {
+                mGlobal->mGraphicsQueue.SubmitEmptyCommandList(PendingBarriersList); // no barriers recorded.
                 mGlobal->mGraphicsQueue.ExecuteCommandLists(farray(&CommandList, 1));
             }
 
