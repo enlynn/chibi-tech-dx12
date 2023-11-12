@@ -25,3 +25,15 @@ D3D12_RESOURCE_DESC GetBufferResourceDesc(
     u64                  Width,
     D3D12_RESOURCE_FLAGS Flags = D3D12_RESOURCE_FLAG_NONE,
     u64                  Alignment = 0);
+
+D3D12_RESOURCE_DESC GetTex2DDesc(
+    DXGI_FORMAT          Format,
+    u64                  Width,
+    u32                  Height,
+    u16                  ArraySize     = 1,
+    u16                  MipLevels     = 0,
+    u32                  SampleCount   = 1,
+    u32                  SampleQuality = 0,
+    D3D12_RESOURCE_FLAGS Flags         = D3D12_RESOURCE_FLAG_NONE,
+    D3D12_TEXTURE_LAYOUT Layout        = D3D12_TEXTURE_LAYOUT_UNKNOWN,
+    u64                  Alignment     = 0);

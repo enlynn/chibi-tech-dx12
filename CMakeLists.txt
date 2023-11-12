@@ -61,7 +61,7 @@ set(RENDERER
 	"code/renderer/dx12/gpu_texture.h"                      "code/renderer/dx12/gpu_texture.cpp"
 		code/renderer/dx12/gpu_resource_state.h
 		code/renderer/dx12/gpu_resource_state.cpp
-		code/renderer/dx12/gpu_renderpass.h
+        code/renderer/dx12/gpu_render_pass.h
 )
 
 set(SYSTEMS

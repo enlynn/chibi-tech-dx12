@@ -46,7 +46,8 @@ public:
     // NOTE(enlynn): This will be handle by gpu_render_target from now on
 	//const cpu_descriptor& GetCurrentRenderTarget() const { return mDescriptors[mBackbufferIndex]; }
 
-	DXGI_FORMAT           GetSwapchainFormat()     const { return mInfo.mSwapchainFormat;         }
+	DXGI_FORMAT           GetSwapchainFormat()                   const { return mInfo.mSwapchainFormat;         }
+    void                  GetDimensions(u32& Width, u32& Height) const { Width = mWidth; Height = mHeight;      }
 	 
 	static constexpr u32 cMaxBackBufferCount = DXGI_MAX_SWAP_CHAIN_BUFFERS;
 

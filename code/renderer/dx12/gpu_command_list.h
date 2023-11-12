@@ -100,12 +100,19 @@ public:
         mDevice->AsHandle()->GetCopyableFootprints(&Desc, FirstSubresource, NumSubresources, IntermediateOffset,
                                                    farray(Layouts, NumSubresources), farray(NumRows, NumSubresources),
                                                    farray(RowSizesInBytes, NumSubresources), &RequiredSize);
-        
+
         return UpdateSubresources(
 			DestinationResource, IntermediateResource, FirstSubresource, 
 			NumSubresources, RequiredSize, farray(Layouts, NumSubresources), farray(NumRows, NumSubresources),
             farray(RowSizesInBytes, NumSubresources), SourceData);
     }
+
+    // Frame Cache is required for State Transitions
+    void CopyResource(struct gpu_frame_cache* FrameCache, const gpu_resource* DestinationResource, const gpu_resource* SourceResouce);
+
+    void ResolveSubresource(struct gpu_frame_cache* FrameCache,          // Frame Cache is required for State Transitions
+        const gpu_resource* DestinationResource, const gpu_resource* SourceResouce,
+              u32 DestinationSubresource = 0,          u32 SourceSubresource = 0 );
 
 	//Descriptor Binding
 	void SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, ID3D12DescriptorHeap* Heap);

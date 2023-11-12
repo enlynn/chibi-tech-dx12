@@ -3,6 +3,7 @@
 #include "gpu_pso.h"
 #include "gpu_root_signature.h"
 #include "gpu_render_target.h"
+#include "gpu_state.h"
 
 #include <platform/platform.h>
 
@@ -241,6 +242,30 @@ gpu_command_list::UpdateSubresources(
 		}
 	}
 	return RequiredSize;
+}
+
+void gpu_command_list::CopyResource(gpu_frame_cache* FrameCache, const gpu_resource* DestinationResource, const gpu_resource* SourceResouce)
+{
+    FrameCache->TransitionResource(DestinationResource, D3D12_RESOURCE_STATE_COPY_DEST);
+    FrameCache->TransitionResource(SourceResouce,       D3D12_RESOURCE_STATE_COPY_SOURCE);
+
+    FrameCache->FlushResourceBarriers(this);
+
+    mHandle->CopyResource(DestinationResource->AsHandle(), SourceResouce->AsHandle());
+}
+
+void gpu_command_list::ResolveSubresource(gpu_frame_cache* FrameCache,
+                                          const gpu_resource* DestinationResource, const gpu_resource* SourceResouce,
+                                          u32 DestinationSubresource,              u32 SourceSubresource)
+{
+    FrameCache->TransitionResource(DestinationResource, D3D12_RESOURCE_STATE_RESOLVE_DEST,   DestinationSubresource);
+    FrameCache->TransitionResource(SourceResouce,       D3D12_RESOURCE_STATE_RESOLVE_SOURCE, SourceSubresource);
+
+    FrameCache->FlushResourceBarriers(this);
+
+    mHandle->ResolveSubresource(DestinationResource->AsHandle(), DestinationSubresource,
+                                SourceResouce->AsHandle(),       SourceSubresource,
+                                DestinationResource->GetResourceDesc().Format);
 }
 
 void 

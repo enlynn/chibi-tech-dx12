@@ -58,3 +58,19 @@ GetBufferResourceDesc(
     return GetResourceDesc(D3D12_RESOURCE_DIMENSION_BUFFER, Alignment, Width, 1, 1, 1,
                             DXGI_FORMAT_UNKNOWN, 1, 0, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, Flags);
 }
+
+D3D12_RESOURCE_DESC GetTex2DDesc(
+    DXGI_FORMAT          Format,
+    u64                  Width,
+    u32                  Height,
+    u16                  ArraySize,
+    u16                  MipLevels,
+    u32                  SampleCount,
+    u32                  SampleQuality,
+    D3D12_RESOURCE_FLAGS Flags,
+    D3D12_TEXTURE_LAYOUT Layout,
+    u64                  Alignment)
+{
+    return GetResourceDesc(D3D12_RESOURCE_DIMENSION_TEXTURE2D, Alignment, Width, Height, ArraySize,
+                           MipLevels, Format, SampleCount, SampleQuality, Layout, Flags);
+}

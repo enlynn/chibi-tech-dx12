@@ -10,14 +10,27 @@
 #include "gpu_root_signature.h"
 #include "gpu_pso.h"
 #include "gpu_resource_state.h"
+#include "gpu_shader_utils.h"
 
 #include <util/allocator.h>
 #include <util/array.h>
+
+#include <systems/resource_system.h>
+
+enum class gpu_framebuffer_binding
+{
+    main_color,
+    //depth_stencil,
+    max,
+};
 
 struct gpu_state
 {
 	allocator                  mHeapAllocator = {};
 	u64                        mFrameCount = 0;
+
+    // For loader Shader Sources
+    resource_system*           mResourceSystem;
 
 	gpu_device                 mDevice = {};
 	gpu_swapchain              mSwapchain = {};
@@ -47,11 +60,17 @@ struct gpu_frame_cache
 
     gpu_resource_state_tracker mResourceStateTracker = {};
 
+    // NOTE(Enlynn): ideally we would create this from a scratch memory texture pool, but for now,
+    // let's just create one texture per FrameCache
+    gpu_texture                mFramebuffers[u32(gpu_framebuffer_binding::max)];
+
     //
     // Convenient Wrapper functions to make accessing state a bit simpler
     //
 
     gpu_device*       GetDevice() const { return &mGlobal->mDevice; }
+
+    gpu_texture*      GetFramebuffer(gpu_framebuffer_binding Binding) { return &mFramebuffers[u32(Binding)]; }
 
     void FlushGPU()
     {
@@ -134,6 +153,12 @@ struct gpu_frame_cache
     }
 
     void FlushResourceBarriers(gpu_command_list* CommandList) { mResourceStateTracker.FlushResourceBarriers(CommandList); }
+
+    // For loading shader files
+    void LoadShader(shader_resource* Shader, const char* ShaderName)
+    {
+        mGlobal->mResourceSystem->Load(resource_type::builtin_shader, ShaderName, Shader);
+    }
 };
 
 inline gpu_frame_cache* gpu_state::GetFrameCache() const { return &mPerFrameCache[mFrameCount % cMaxFrameCache]; }

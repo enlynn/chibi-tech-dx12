@@ -14,8 +14,8 @@ void gpu_render_target::AttachTexture(attachment_point Slot, gpu_texture* Textur
     D3D12_RESOURCE_DESC TexDesc = Texture->GetResourceDesc();
     if (TexDesc.Width != mWidth || TexDesc.Height != mHeight)
     {
-        LogWarn("Attaching Texture to RenderTarget (), Texture dimensions do not match. Render Target Dim (%d, %d), Texture Dims (%d, %d).",
-            mWidth, mHeight, TexDesc.Width, TexDesc.Height);
+        //LogWarn("Attaching Texture to RenderTarget (), Texture dimensions do not match. Render Target Dim (%d, %d), Texture Dims (%d, %d).",
+        //    mWidth, mHeight, TexDesc.Width, TexDesc.Height);
 
         mWidth  = (u32)TexDesc.Width;
         mHeight = (u32)TexDesc.Height;

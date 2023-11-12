@@ -31,6 +31,11 @@ public:
 	constexpr ID3D12Device2* AsHandle()  const { return mDevice;  }
 	constexpr IDXGIAdapter1* AsAdapter() const { return mAdapter; }
 
+    DXGI_SAMPLE_DESC GetMultisampleQualityLevels(
+                DXGI_FORMAT                           Format,
+                u32                                   NumSamples = D3D12_MAX_MULTISAMPLE_SAMPLE_COUNT,
+                D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS Flags      = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE);
+
 	ID3D12DescriptorHeap* CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 Count, bool IsShaderVisible);
 
     gpu_resource          CreateCommittedResource(commited_resource_info& Info);

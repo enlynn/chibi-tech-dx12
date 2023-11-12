@@ -31,7 +31,7 @@ GetUAVDesc(D3D12_RESOURCE_DESC* ResDesc, UINT MipSlice, UINT ArraySlice = 0, UIN
         {
             if ( ResDesc->DepthOrArraySize > 1 )
             {
-                UavDesc.ViewDimension                  = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+                UavDesc.ViewDimension                  = (ResDesc->SampleDesc.Count > 1) ? D3D12_UAV_DIMENSION_TEXTURE2DMSARRAY : D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
                 UavDesc.Texture2DArray.ArraySize       = ResDesc->DepthOrArraySize - ArraySlice;
                 UavDesc.Texture2DArray.FirstArraySlice = ArraySlice;
                 UavDesc.Texture2DArray.PlaneSlice      = PlaneSlice;
@@ -39,10 +39,13 @@ GetUAVDesc(D3D12_RESOURCE_DESC* ResDesc, UINT MipSlice, UINT ArraySlice = 0, UIN
             }
             else
             {
-                UavDesc.ViewDimension        = D3D12_UAV_DIMENSION_TEXTURE2D;
+                UavDesc.ViewDimension        = (ResDesc->SampleDesc.Count > 1) ? D3D12_UAV_DIMENSION_TEXTURE2DMS : D3D12_UAV_DIMENSION_TEXTURE2D;
                 UavDesc.Texture2D.PlaneSlice = PlaneSlice;
                 UavDesc.Texture2D.MipSlice   = MipSlice;
             }
+
+            if (ResDesc->SampleDesc.Count > 0)
+            {}
         } break;
 
         case D3D12_RESOURCE_DIMENSION_TEXTURE3D:

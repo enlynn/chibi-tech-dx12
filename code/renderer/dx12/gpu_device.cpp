@@ -198,6 +198,35 @@ gpu_device::SelectAdapter()
 	ComSafeRelease(Factory6);
 }
 
+DXGI_SAMPLE_DESC gpu_device::GetMultisampleQualityLevels(
+    DXGI_FORMAT                           Format,
+    u32                                   NumSamples,
+    D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS Flags)
+{
+    DXGI_SAMPLE_DESC SampleDesc = { 1, 0 };
+
+    D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS QualityLevels = {};
+    QualityLevels.Format           = Format;
+    QualityLevels.SampleCount      = 1;
+    QualityLevels.Flags            = Flags;
+    QualityLevels.NumQualityLevels = 0;
+
+    while (QualityLevels.SampleCount <= NumSamples &&
+           SUCCEEDED(mDevice->CheckFeatureSupport( D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &QualityLevels,
+                                                   sizeof( D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS ) ) ) &&
+           QualityLevels.NumQualityLevels > 0 )
+    {
+        // That works...
+        SampleDesc.Count   = QualityLevels.SampleCount;
+        SampleDesc.Quality = QualityLevels.NumQualityLevels - 1;
+
+        // But can we do better?
+        QualityLevels.SampleCount *= 2;
+    }
+
+    return SampleDesc;
+}
+
 ID3D12DescriptorHeap* 
 gpu_device::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, u32 Count, bool IsShaderVisible)
 {
