@@ -48,10 +48,95 @@ public:
     virtual void OnRender(struct gpu_frame_cache* FrameCache) override;
 
 private:
-
     static constexpr const char* ShaderName        = "TestTriangle";
     static constexpr const char* RootSignatureName = "Test Triangle Name";
 };
+
+//
+// template<typename Id>
+// struct id_generator {
+//
+//      u32 mFreeIndices; //
+// }
+//
+//
+
+#include <util/id.h>
+#include <util/bit.h>
+
+DEFINE_TYPE_ID(render_mesh_id);
+
+enum class render_mesh_state
+{
+    unallocated,       // the render mesh is unallocated and is a free slot
+    pending_uploaded,  // the render mesh has been initialized, but not queued yet for uploads
+    uploading,         // the render mesh is uploading to the GPU, but not ready for use
+    active,            // the render mesh is resident on the GPU and ready for rendering
+    hidden,            // the render mesh is resident on the GPU but hidden and is inactive. Is not considered for rendering
+};
+
+// For now, there are no mesh Flags but I want to prototype a "Filter"
+enum render_mesh_flags
+{
+    render_mesh_flag_none       = 0x00,
+    render_mesh_flag_renderable = BitMaskU8(1),
+};
+
+struct render_draw_data
+{
+    gpu_resource            mVertexBufferResource = {};
+    gpu_resource            mIndexBufferResource  = {};
+    D3D12_INDEX_BUFFER_VIEW mIndexBufferView      = {};
+    u32                     mElementCount         = 0;
+};
+
+class render_mesh_manger
+{
+public:
+    render_mesh_manger();
+
+    render_mesh_id AcquireMesh();          // Acquire a new id for a mesh. Guarenteed to be unique.
+    void ReleaseMesh(render_mesh_id Id);   // Release a mesh id. The data for the mesh is removed and unallocated.
+
+    void SetMeshState(render_mesh_id Id, render_mesh_state State);
+    render_mesh_state GetMeshState(render_mesh_id Id) const;
+
+private:
+    static constexpr int cTotalAllowedMeshes = 10;
+    using render_mesh_generator = id_generator<render_mesh_id, cTotalAllowedMeshes>;
+
+    struct mesh_metadata
+    { // Small header for mesh data
+        render_mesh_state mState = render_mesh_state::unallocated;
+        u8                mFlags = render_mesh_flag_none;
+    };
+
+    render_mesh_generator mIdGenerator = {};
+    mesh_metadata         mMeshStates[cTotalAllowedMeshes];
+    render_draw_data      mMeshData[cTotalAllowedMeshes];
+};
+
+//
+// Render Mesh System Workflow
+//
+// render_mesh_id NewMesh = RenderMeshSystem->MeshAcquire();
+//
+// FrameCache->AddMeshUpload(NewMesh, GpuData);
+// RenderMeshSystem->SetMeshState(NewMesh, render_mesh_state::pending_uploaded);
+//
+// //... later when the frame_cache is submitting uploads
+// RenderMeshSystem->SetMeshState(NewMesh, render_mesh_state::uploading);
+//
+// //... later after the frame_cache is reset and we can guarantee the mesh is on the gpu
+// render_upload_data Upload = ...;
+//
+// RenderMeshSystem->SetDrawData(Upload.MeshId, Upload.DrawData);
+// RenderMeshSystem->SetMeshState(Upload.MeshId, render_mesh_state::active);
+//
+// // ... later when drawing
+// u32 MeshFilterFlags = render_mesh_flags::none;
+// u32 RenderMeshSystem->BuildDrawList(FrameCache->DrawList, MeshFilterFlags);
+//
 
 var_global constexpr bool  cEnableMSAA = true;
 
@@ -62,10 +147,104 @@ var_global gpu_buffer      gIndexResource   = {};
 var_global scene_pass      gScenePass       = {};
 var_global resolve_pass    gResolvePass     = {};
 
+struct complex_vertex
+{
+    f32x3 Pos;
+    f32x3 Norm;
+    f32x2 Tex;
+};
+
+struct test_cube
+{
+    complex_vertex Vertices[24];
+    u16            Indices[36];
+};
+
+template<typename V, typename I> void
+ReverseWinding(I *Indices, u32 IndexCount, V *Vertices, u32 VertexCount)
+{
+    for (u32 i = 0; i < IndexCount; i += 3)
+    {
+        I _x = Indices[i];
+        I _y = Indices[i+2];
+
+        Indices[i]   = _y;
+        Indices[i+2] = _x;
+    }
+
+    for (u32 i = 0; i < VertexCount; ++i)
+    {
+        Vertices[i].Tex.X = (1.0f - Vertices[i].Tex.X);
+    }
+}
+
+test_cube MakeCube(f32 Size = 1.0f, bool ShouldReverseWinding = false, bool InvertNormals = false)
+{
+    // 8 edges of cube.
+    f32x3 p[8] = {
+        {  Size, Size, -Size }, {  Size, Size,  Size }, {  Size, -Size,  Size }, {  Size, -Size, -Size },
+        { -Size, Size,  Size }, { -Size, Size, -Size }, { -Size, -Size, -Size }, { -Size, -Size,  Size }
+    };
+    // 6 face normals
+    f32x3 n[6] = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 } };
+    // 4 unique texture coordinates
+    f32x2 t[4] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+
+    // Indices for the vertex positions.
+    u16 i[24] = {
+        0, 1, 2, 3,  // +X
+        4, 5, 6, 7,  // -X
+        4, 1, 0, 5,  // +Y
+        2, 7, 6, 3,  // -Y
+        1, 4, 7, 2,  // +Z
+        5, 0, 3, 6   // -Z
+    };
+
+    test_cube Result = {};
+    memset(Result.Vertices, 0, sizeof(Result.Vertices));
+    memset(Result.Indices, 0, sizeof(Result.Indices));
+
+    if (InvertNormals)
+    {
+        for (auto & f : n)  // For each face of the cube.
+        {
+            f *= -1.0f;
+        }
+    }
+
+    u16 vidx = 0;
+    u16 iidx = 0;
+    for (u16 f = 0; f < 6; ++f )  // For each face of the cube.
+    {
+        // Four vertices per face.
+        Result.Vertices[vidx++] = { p[i[f * 4 + 0]], n[f], t[0] };
+        Result.Vertices[vidx++] = { p[i[f * 4 + 1]], n[f], t[1] };
+        Result.Vertices[vidx++] = { p[i[f * 4 + 2]], n[f], t[2] };
+        Result.Vertices[vidx++] = { p[i[f * 4 + 3]], n[f], t[3] };
+
+        // First triangle.
+        Result.Indices[iidx++] =  f * 4 + 0;
+        Result.Indices[iidx++] =  f * 4 + 1;
+        Result.Indices[iidx++] =  f * 4 + 2;
+
+        // Second triangle.
+        Result.Indices[iidx++] =  f * 4 + 2;
+        Result.Indices[iidx++] =  f * 4 + 3;
+        Result.Indices[iidx++] =  f * 4 + 0;
+    }
+
+    if (ShouldReverseWinding)
+    {
+        ReverseWinding(Result.Indices, _countof(Result.Indices), Result.Vertices, _countof(Result.Vertices));
+    }
+
+    return Result;
+}
+
 void scene_pass::OnInit(gpu_frame_cache* FrameCache)
 {
-    shader_resource VertexShader = shader_resource(shader_stage::vertex);
-    shader_resource PixelShader  = shader_resource(shader_stage::pixel);
+    auto VertexShader = shader_resource(shader_stage::vertex);
+    auto PixelShader  = shader_resource(shader_stage::pixel);
 
     FrameCache->LoadShader(&VertexShader, "TestTriangle");
     FrameCache->LoadShader(&PixelShader,  "TestTriangle");

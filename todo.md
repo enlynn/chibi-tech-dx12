@@ -5,10 +5,6 @@ Just a todo list of various things I need to do, in no particular order
 
 ### Renderer
 
-- First Pass RenderPass
-  - Main RenderPass (just using swapchain image)
-- Framebuffer Creation / Management
-  - Resolve/Copy Framebuffer to Swap Image
 - Per Frame Upload Heap
   - For Per-Frame Data and Geometry/Texture Uploads
 - First Pass RenderMesh System

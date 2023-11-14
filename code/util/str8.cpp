@@ -151,7 +151,7 @@ mstr8::mstr8(const char* Ptr, u64 Length) //: mstr8()
         mData.Heap.Ptr[Length] = 0;
 
         // heap remains set to 0 to mark it as dirty set bottom bit to 1, to mark the heap
-        mFooter.Heap.Capacity |= BitMask(HEAP_STRING_BIT);
+        mFooter.Heap.Capacity |= BitMaskU64(HEAP_STRING_BIT);
     }
 }
 
@@ -219,7 +219,7 @@ mstr8::mstr8(const mstr8& Other) //: mstr8()
         mData.Heap.Ptr[mData.Heap.Length] = 0;
 
         // heap remains set to 0 to mark it as dirty set bottom bit to 1, to mark the heap
-        mFooter.Heap.Capacity |= BitMask(HEAP_STRING_BIT);
+        mFooter.Heap.Capacity |= BitMaskU64(HEAP_STRING_BIT);
     }
     else
     {
@@ -274,7 +274,7 @@ mstr8::operator=(const mstr8& Other)
         mData.Heap.Ptr[mData.Heap.Length] = 0;
 
         // heap remains set to 0 to mark it as dirty set bottom bit to 1, to mark the heap
-        mFooter.Heap.Capacity |= BitMask(HEAP_STRING_BIT);
+        mFooter.Heap.Capacity |= BitMaskU64(HEAP_STRING_BIT);
     }
     else
     {
@@ -401,7 +401,7 @@ mstr8::ExpandIfNeeded(u64 RequiredCapacity)
 
     // heap remains set to 0 to mark it as dirty set bottom bit to 1, to mark the heap
     mFooter.Heap.Capacity  = NewCapacity;
-    mFooter.Heap.Capacity |= BitMask(HEAP_STRING_BIT);
+    mFooter.Heap.Capacity |= BitMaskU64(HEAP_STRING_BIT);
 }
 
 void 
@@ -434,7 +434,7 @@ mstr8::ShrinkToFit()
         mData.Heap.Ptr[CurrentLength] = 0;
 
         // heap remains set to 0 to mark it as dirty set bottom bit to 1, to mark the heap
-        mFooter.Heap.Capacity |= BitMask(HEAP_STRING_BIT);
+        mFooter.Heap.Capacity |= BitMaskU64(HEAP_STRING_BIT);
     }
 }
 

@@ -38,7 +38,8 @@ set(UTIL
 	"code/util/allocator.h" "code/util/allocator.cpp" 
 	"code/util/array.h"
         code/util/hashmap.h
-		code/util/hashmap.cpp)
+		code/util/hashmap.cpp
+        code/util/id.h)
 
 set(RENDERER
 	"code/renderer/dx12/d3d12_common.h"

@@ -2,33 +2,31 @@
 
 #include <types.h>
 
-// Retrieve the BitMask for Unsigned Ints only.
-template<typename T> constexpr T   BitMask(T BitIndex)   = delete;
-template<>           constexpr u8  BitMask(u8 BitIndex)  { assert(BitIndex < 8);  return (u8) ((u8)1 << BitIndex); }
-template<>           constexpr u16 BitMask(u16 BitIndex) { assert(BitIndex < 16); return (u16)((u16)1 << BitIndex); }
-template<>           constexpr u32 BitMask(u32 BitIndex) { assert(BitIndex < 32); return (u32)((u32)1 << BitIndex); }
-template<>           constexpr u64 BitMask(u64 BitIndex) { assert(BitIndex < 64); return (u64)((u64)1 << BitIndex); }
+#define BitMaskU8(BitIndex)  ((u8) ((u8) 1 << (BitIndex)))
+#define BitMaskU16(BitIndex) ((u16)((u16)1 << (BitIndex)))
+#define BitMaskU32(BitIndex) ((u32)((u32)1 << (BitIndex)))
+#define BitMaskU64(BitIndex) ((u64)((u64)1 << (BitIndex)))
 
 // Set the Bit for Unsigned Ints only.
 template<typename T> constexpr T   BitSet(T   Value, T   BitIndex) = delete;
-template<>           constexpr u8  BitSet(u8  Value, u8  BitIndex) { assert(BitIndex < 8);  return Value | BitMask(BitIndex); }
-template<>           constexpr u16 BitSet(u16 Value, u16 BitIndex) { assert(BitIndex < 16); return Value | BitMask(BitIndex); }
-template<>           constexpr u32 BitSet(u32 Value, u32 BitIndex) { assert(BitIndex < 32); return Value | BitMask(BitIndex); }
-template<>           constexpr u64 BitSet(u64 Value, u64 BitIndex) { assert(BitIndex < 64); return Value | BitMask(BitIndex); }
+template<>           constexpr u8  BitSet(u8  Value, u8  BitIndex) { assert(BitIndex < 8);  return Value | BitMaskU8(BitIndex); }
+template<>           constexpr u16 BitSet(u16 Value, u16 BitIndex) { assert(BitIndex < 16); return Value | BitMaskU16(BitIndex); }
+template<>           constexpr u32 BitSet(u32 Value, u32 BitIndex) { assert(BitIndex < 32); return Value | BitMaskU32(BitIndex); }
+template<>           constexpr u64 BitSet(u64 Value, u64 BitIndex) { assert(BitIndex < 64); return Value | BitMaskU64(BitIndex); }
 
 // Clear the Bit for Unsigned Ints only.
 template<typename T> constexpr T   BitClear(T   Value, T   BitIndex) = delete;
-template<>           constexpr u8  BitClear(u8  Value, u8  BitIndex) { assert(BitIndex < 8);  return Value & ~BitMask(BitIndex); }
-template<>           constexpr u16 BitClear(u16 Value, u16 BitIndex) { assert(BitIndex < 16); return Value & ~BitMask(BitIndex); }
-template<>           constexpr u32 BitClear(u32 Value, u32 BitIndex) { assert(BitIndex < 32); return Value & ~BitMask(BitIndex); }
-template<>           constexpr u64 BitClear(u64 Value, u64 BitIndex) { assert(BitIndex < 64); return Value & ~BitMask(BitIndex); }
+template<>           constexpr u8  BitClear(u8  Value, u8  BitIndex) { assert(BitIndex < 8);  return Value & ~BitMaskU8(BitIndex); }
+template<>           constexpr u16 BitClear(u16 Value, u16 BitIndex) { assert(BitIndex < 16); return Value & ~BitMaskU16(BitIndex); }
+template<>           constexpr u32 BitClear(u32 Value, u32 BitIndex) { assert(BitIndex < 32); return Value & ~BitMaskU32(BitIndex); }
+template<>           constexpr u64 BitClear(u64 Value, u64 BitIndex) { assert(BitIndex < 64); return Value & ~BitMaskU64(BitIndex); }
 
 // Flip the Bit for Unsigned Ints only.
 template<typename T> constexpr T   BitFlip(T   Value, T   BitIndex) = delete;
-template<>           constexpr u8  BitFlip(u8  Value, u8  BitIndex) { assert(BitIndex < 8);  return Value ^ BitMask(BitIndex); }
-template<>           constexpr u16 BitFlip(u16 Value, u16 BitIndex) { assert(BitIndex < 16); return Value ^ BitMask(BitIndex); }
-template<>           constexpr u32 BitFlip(u32 Value, u32 BitIndex) { assert(BitIndex < 32); return Value ^ BitMask(BitIndex); }
-template<>           constexpr u64 BitFlip(u64 Value, u64 BitIndex) { assert(BitIndex < 64); return Value ^ BitMask(BitIndex); }
+template<>           constexpr u8  BitFlip(u8  Value, u8  BitIndex) { assert(BitIndex < 8);  return Value ^ BitMaskU8(BitIndex); }
+template<>           constexpr u16 BitFlip(u16 Value, u16 BitIndex) { assert(BitIndex < 16); return Value ^ BitMaskU16(BitIndex); }
+template<>           constexpr u32 BitFlip(u32 Value, u32 BitIndex) { assert(BitIndex < 32); return Value ^ BitMaskU32(BitIndex); }
+template<>           constexpr u64 BitFlip(u64 Value, u64 BitIndex) { assert(BitIndex < 64); return Value ^ BitMaskU64(BitIndex); }
 
 // Mask a bitfield for Unsigned Ints only.
 template<typename T> constexpr T   BitMaskClear(T   Value, T   BitMask) = delete;
