@@ -34,7 +34,7 @@
 //------------------------------------------
 // Quaternion Math
 //
-//
+// f32x44 QuaternionToRotationMatrix(quaternion Quaternion)
 //
 //------------------------------------------
 // More Misc. / Geometric Functions
@@ -74,8 +74,8 @@ struct f32x2
 {
     union
     {
-        struct { f32 X, Y, Z, W; };
-        f32 Ptr[4];
+        struct { f32 X, Y; };
+        f32 Ptr[2];
     };
 
     inline f32    Length();
@@ -402,7 +402,7 @@ inline f32 f32x2::LengthSq() { return X * X + Y * Y;          }
 inline f32x2& f32x2::Norm()
 {
     f32 Len = Length();
-    if (F32IsZero(Len))
+    if (!F32IsZero(Len))
     {
         X /= Len;
         Y /= Len;
@@ -683,7 +683,7 @@ inline f32 f32x3::LengthSq() { return X * X + Y * Y + Z * Z;          }
 inline f32x3& f32x3::Norm()
 {
     f32 Len = Length();
-    if (F32IsZero(Len))
+    if (!F32IsZero(Len))
     {
         X /= Len;
         Y /= Len;
@@ -1126,7 +1126,7 @@ inline f32 f32x4::LengthSq() { return X * X + Y * Y + Z * Z + W * W;          }
 inline f32x4& f32x4::Norm()
 {
     f32 Len = Length();
-    if (F32IsZero(Len))
+    if (!F32IsZero(Len))
     {
         X /= Len;
         Y /= Len;
@@ -1292,12 +1292,14 @@ inline f32x44 TranslateMatrix(f32x3 TranslateVector)
     return Result;
 }
 
-inline f32x44 LookAtMatrixRH(f32x3 EyeVector, f32x3 CenterPoint, f32x3 UpVector)
+inline f32x44 LookAtMatrixRH(f32x3 EyePosition, f32x3 EyeLookAtPoint, f32x3 UpVector)
 {
     f32x44 Result = f32x44();
 
-    f32x3 f = CenterPoint - EyeVector;
+    f32x3 f = EyeLookAtPoint - EyePosition;
     f.Norm();
+
+    UpVector.Norm(); // just to be safe
 
     f32x3 s = Cross(f, UpVector);
     s.Norm();
@@ -1319,9 +1321,9 @@ inline f32x44 LookAtMatrixRH(f32x3 EyeVector, f32x3 CenterPoint, f32x3 UpVector)
     Result.Ptr[2][2] = -f.Z;
     Result.Ptr[2][3] = 0.0f;
 
-    Result.Ptr[3][0] = -Dot(s, EyeVector);
-    Result.Ptr[3][1] = -Dot(u, EyeVector);
-    Result.Ptr[3][2] =  Dot(f, EyeVector);
+    Result.Ptr[3][0] = -Dot(s, EyePosition);
+    Result.Ptr[3][1] = -Dot(u, EyePosition);
+    Result.Ptr[3][2] = Dot(f, EyePosition);
     Result.Ptr[3][3] = 1.0f;
 
     return Result;
@@ -1329,9 +1331,10 @@ inline f32x44 LookAtMatrixRH(f32x3 EyeVector, f32x3 CenterPoint, f32x3 UpVector)
 
 inline f32x44 PerspectiveMatrixRH(f32 FieldOfView, f32 AspectRatio, f32 NearPlane, f32 FarPlane)
 {
-    f32x44 Result = f32x44();
+    f32x44 Result = f32x44(0.0f);
 
-    f32 Cotangent = 1.0f / tanf(FieldOfView * ((f32)F32_PI / 360.0f));
+    f32 Radians = DegreesToRadians(FieldOfView);
+    f32 Cotangent = 1.0f / tanf(Radians * 0.5f);
 
     Result.Ptr[0][0] = Cotangent / AspectRatio;
     Result.Ptr[1][1] = Cotangent;
@@ -1339,6 +1342,8 @@ inline f32x44 PerspectiveMatrixRH(f32 FieldOfView, f32 AspectRatio, f32 NearPlan
     Result.Ptr[2][2] = (NearPlane + FarPlane) / (NearPlane - FarPlane);
     Result.Ptr[3][2] = (2.0f * NearPlane * FarPlane) / (NearPlane - FarPlane);
     Result.Ptr[3][3] = 0.0f;
+
+    return Result;
 }
 
 inline f32x44 RotateXMatrix(f32 Theta)
@@ -1520,6 +1525,29 @@ inline quaternion EulerToQuaternion(f32 Roll, f32 Pitch, f32 Yaw)
 inline quaternion EulerToQuaternion(f32 Axis[3])
 {
     return EulerToQuaternion(Axis[0], Axis[1], Axis[2]);
+}
+
+inline f32x44 QuaternionToRotationMatrix(quaternion Quaternion)
+{
+    f32 X2 = Quaternion.X     * Quaternion.X;
+    f32 Y2 = Quaternion.Y     * Quaternion.Y;
+    f32 Z2 = Quaternion.Z     * Quaternion.Z;
+    f32 XY = Quaternion.X     * Quaternion.Y;
+    f32 XZ = Quaternion.X     * Quaternion.Z;
+    f32 YZ = Quaternion.Y     * Quaternion.Z;
+    f32 WX = Quaternion.Theta * Quaternion.X;
+    f32 WY = Quaternion.Theta * Quaternion.Y;
+    f32 WZ = Quaternion.Theta * Quaternion.Z;
+
+    f32x44 Result = {};
+
+    // 3x3 Rotation Matrix
+    Result.C0 = { 1 - 2.0f * (Y2 + Z2),        2.0f * (XY + WZ),        2.0f * (XZ - WY), 0.0f };
+    Result.C1 = {     2.0f * (XY - WZ), 1.0f - 2.0f * (X2 + Z2),        2.0f * (YZ - WX), 0.0f };
+    Result.C2 = {        2.0f * (XZ + WY),     2.0f * (YZ - WX), 1.0f - 2.0f * (X2 + Y2), 0.0f };
+    Result.C3 = {                       0,                    0,                       0,    1 };
+
+    return Result;
 }
 
 //

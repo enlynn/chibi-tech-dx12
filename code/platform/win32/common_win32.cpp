@@ -2,14 +2,16 @@
 
 #include <util/allocator.h>
 
+var_global constexpr UINT cDesiredSchedulerMS = 1;
+
 void PlatformInit()
 {
-	UINT DesiredSchedulerMS = 1;
-	bool _SleepIsGranular = (timeBeginPeriod(DesiredSchedulerMS) == TIMERR_NOERROR);
+    assert(timeBeginPeriod(cDesiredSchedulerMS) == TIMERR_NOERROR);
 }
 
 void PlatformDeinit()
 { // NOTE: nothing for now
+    assert(timeEndPeriod(cDesiredSchedulerMS) == TIMERR_NOERROR);
 }
 
 void PlatformSleepMainThread(u32 TimeMS)
@@ -23,7 +25,7 @@ void PlatformExitProcess()
 	ExitProcess(0);
 }
 
-wchar_t* 
+wchar_t*
 Win32Utf8ToUtf16(allocator& Allocator, const char* Utf8String, u64 Utf8StringSize)
 {
 	// First pass in a null bufferr to get the required size.

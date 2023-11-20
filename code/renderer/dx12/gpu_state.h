@@ -20,7 +20,7 @@
 enum class gpu_framebuffer_binding
 {
     main_color,
-    //depth_stencil,
+    depth_stencil,
     max,
 };
 

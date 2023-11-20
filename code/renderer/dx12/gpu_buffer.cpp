@@ -120,3 +120,47 @@ gpu_buffer::CreateIndexBuffer(gpu_frame_cache* FrameCache, gpu_index_buffer_info
 
 	return Result;
 }
+
+gpu_buffer gpu_buffer::CreateStructuredBuffer(gpu_frame_cache* FrameCache, gpu_structured_buffer_info& Info)
+{
+    D3D12_RESOURCE_FLAGS  Flags              = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    u64 BufferSize                           = Info.mFrames * Info.mCount * Info.mStride;
+
+    //CopyBuffer(FrameCache, nullptr, u64 BufferSize, Flags, InitialBufferState)
+
+    commited_resource_info ResourceInfo = {};
+    ResourceInfo.Size                   = BufferSize;
+    ResourceInfo.HeapType               = D3D12_HEAP_TYPE_UPLOAD;
+    ResourceInfo.InitialState           = D3D12_RESOURCE_STATE_GENERIC_READ; // ...is this right?
+    //ResourceInfo.ResourceFlags          = Flags;
+    gpu_resource Resource = FrameCache->GetDevice()->CreateCommittedResource(ResourceInfo);
+    Resource.AsHandle()->SetName(L"PER MESH DATA");
+
+    gpu_buffer Result    = {};
+    Result.mType         = gpu_buffer_type::structured;
+    Result.mResource     = Resource;
+    Result.mCpuVisible   = true;
+    Result.mCount        = (u32)Info.mCount;
+    Result.mStride       = (u32)Info.mStride;
+    Result.mBufferFrames = Info.mFrames;
+
+    // Track the resource state
+    FrameCache->TrackResource(Resource, D3D12_RESOURCE_STATE_GENERIC_READ);
+
+    return Result;
+}
+
+void gpu_buffer::Map(u64 Frame)
+{ // NOTE(enlynn): probably want to map only a small range, but being lazy for now...
+    mResource.AsHandle()->Map(0, nullptr, (void**)&mMappedData);
+    mMappedFrame = (Frame % mBufferFrames);
+    mFrameData   = (u8*)mMappedData + mMappedFrame * (mCount * mStride);
+}
+
+void gpu_buffer::Unmap()
+{
+    mResource.AsHandle()->Unmap(0, nullptr);
+    mFrameData  = nullptr;
+    mMappedData = nullptr;
+    mMappedFrame = 0;
+}

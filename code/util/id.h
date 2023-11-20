@@ -100,21 +100,21 @@ namespace id_type_internal
 {
 	struct id_base 
 	{
-		constexpr explicit id_base(id_type p_id) : id(p_id) {}
+		constexpr explicit id_base(const id_type p_id) : id(p_id) {}
 		constexpr explicit operator id_type() const { return id; }
-	private:
-		id_type id;
+	protected:
+		id_type id = cIdMask;
 	};
 } //id_type_internal
 
 #define DEFINE_TYPE_ID(name)                                 \
-	struct name final : id_type_internal::id_base            \
+	struct name final : public id_type_internal::id_base     \
 	{                                                        \
-		constexpr explicit name(id_type p_id)                \
+		constexpr explicit name(const id_type p_id)          \
 			: id_base(p_id) {}                               \
-		constexpr explicit name() : id_base(cIdMask) {}  \
+		constexpr explicit name() : id_base(cIdMask) {}      \
+		constexpr operator id_type() const { return id; }    \
 	};
-
 #else
 	#define DEFINE_TYPE_ID(name)         using name = id_type;
 #endif
@@ -122,6 +122,18 @@ namespace id_type_internal
 template<typename id_subtype, u32 cMaxIndices, u32 cMinFreeIndices = 10>
 struct id_generator
 {
+    id_generator()
+    {
+        ForRange(u32, i, cMaxIndices)
+            mGenerations[i] = 0;
+
+        ForRange(u32, i, cMaxIndices)
+            mFreeIndices[i] = 0;
+
+        mFreeIndicesCount = 0;
+        mNextIndex        = 0;
+    }
+
     id_subtype AcquireId()
     {
         index_type      Index      = 0;
@@ -172,8 +184,8 @@ struct id_generator
     }
 
 private:
-    u8*       mGenerations[cMaxIndices];
-    id_type   mFreeIndices[cMaxIndices];
-    u32       mNextIndex        = 0;
-    u32       mFreeIndicesCount = 0;
+    generation_type mGenerations[cMaxIndices];
+    id_type         mFreeIndices[cMaxIndices];
+    u32             mNextIndex        = 0;
+    u32             mFreeIndicesCount = 0;
 };

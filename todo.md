@@ -20,6 +20,7 @@ Just a todo list of various things I need to do, in no particular order
 
 ### Engine-y Stuff
 
+- Input system
 - First Pass Geometry, Material, and Texture System
 - First Pass (De)Serialization
 - "project" files, mostly a way for me to have asset data separate from the engine

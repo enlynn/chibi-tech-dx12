@@ -13,13 +13,22 @@
 enum class triangle_root_parameter
 {
 	vertex_buffer = 0,
-	per_draw      = 1,
+    mesh_data     = 1,
+	per_draw      = 2,
 };
 
 struct vertex_draw_constants
 {
 	u32 uVertexOffset      = 0;
 	u32 uVertexBufferIndex = 0;
+    u32 uMeshDataIndex     = 0;
+};
+
+struct per_mesh_data
+{
+    f32x44 Projection; // Ideally this would go in a "global" constant  buffer. For now, this should be fine.
+    f32x44 View;
+    f32x44 Transforms;     // Rotation-Scale-Translation Ops
 };
 
 // Example Implementation of a renderpass
@@ -60,90 +69,15 @@ private:
 // }
 //
 //
-
-#include <util/id.h>
-#include <util/bit.h>
-
-DEFINE_TYPE_ID(render_mesh_id);
-
-enum class render_mesh_state
-{
-    unallocated,       // the render mesh is unallocated and is a free slot
-    pending_uploaded,  // the render mesh has been initialized, but not queued yet for uploads
-    uploading,         // the render mesh is uploading to the GPU, but not ready for use
-    active,            // the render mesh is resident on the GPU and ready for rendering
-    hidden,            // the render mesh is resident on the GPU but hidden and is inactive. Is not considered for rendering
-};
-
-// For now, there are no mesh Flags but I want to prototype a "Filter"
-enum render_mesh_flags
-{
-    render_mesh_flag_none       = 0x00,
-    render_mesh_flag_renderable = BitMaskU8(1),
-};
-
-struct render_draw_data
-{
-    gpu_resource            mVertexBufferResource = {};
-    gpu_resource            mIndexBufferResource  = {};
-    D3D12_INDEX_BUFFER_VIEW mIndexBufferView      = {};
-    u32                     mElementCount         = 0;
-};
-
-class render_mesh_manger
-{
-public:
-    render_mesh_manger();
-
-    render_mesh_id AcquireMesh();          // Acquire a new id for a mesh. Guarenteed to be unique.
-    void ReleaseMesh(render_mesh_id Id);   // Release a mesh id. The data for the mesh is removed and unallocated.
-
-    void SetMeshState(render_mesh_id Id, render_mesh_state State);
-    render_mesh_state GetMeshState(render_mesh_id Id) const;
-
-private:
-    static constexpr int cTotalAllowedMeshes = 10;
-    using render_mesh_generator = id_generator<render_mesh_id, cTotalAllowedMeshes>;
-
-    struct mesh_metadata
-    { // Small header for mesh data
-        render_mesh_state mState = render_mesh_state::unallocated;
-        u8                mFlags = render_mesh_flag_none;
-    };
-
-    render_mesh_generator mIdGenerator = {};
-    mesh_metadata         mMeshStates[cTotalAllowedMeshes];
-    render_draw_data      mMeshData[cTotalAllowedMeshes];
-};
-
-//
-// Render Mesh System Workflow
-//
-// render_mesh_id NewMesh = RenderMeshSystem->MeshAcquire();
-//
-// FrameCache->AddMeshUpload(NewMesh, GpuData);
-// RenderMeshSystem->SetMeshState(NewMesh, render_mesh_state::pending_uploaded);
-//
-// //... later when the frame_cache is submitting uploads
-// RenderMeshSystem->SetMeshState(NewMesh, render_mesh_state::uploading);
-//
-// //... later after the frame_cache is reset and we can guarantee the mesh is on the gpu
-// render_upload_data Upload = ...;
-//
-// RenderMeshSystem->SetDrawData(Upload.MeshId, Upload.DrawData);
-// RenderMeshSystem->SetMeshState(Upload.MeshId, render_mesh_state::active);
-//
-// // ... later when drawing
-// u32 MeshFilterFlags = render_mesh_flags::none;
-// u32 RenderMeshSystem->BuildDrawList(FrameCache->DrawList, MeshFilterFlags);
-//
-
 var_global constexpr bool  cEnableMSAA = true;
 
 var_global gpu_state       gGlobal  = {};
 // Temporary
 var_global gpu_buffer      gVertexResource  = {};
 var_global gpu_buffer      gIndexResource   = {};
+var_global gpu_buffer      gPerObjectData   = {};
+
+// Render Passes
 var_global scene_pass      gScenePass       = {};
 var_global resolve_pass    gResolvePass     = {};
 
@@ -206,9 +140,9 @@ test_cube MakeCube(f32 Size = 1.0f, bool ShouldReverseWinding = false, bool Inve
 
     if (InvertNormals)
     {
-        for (auto & f : n)  // For each face of the cube.
+        for (u16 f = 0; f < 6; ++f )  // For each face of the cube.
         {
-            f *= -1.0f;
+            n[f] *=  -1.0f;
         }
     }
 
@@ -250,8 +184,13 @@ void scene_pass::OnInit(gpu_frame_cache* FrameCache)
     FrameCache->LoadShader(&PixelShader,  "TestTriangle");
 
     { // Create a simple root signature
-        gpu_root_descriptor VertexBuffers[]    = { { .mRootIndex = u32(triangle_root_parameter::vertex_buffer), .mType = gpu_descriptor_type::srv } };
+        gpu_root_descriptor VertexBuffers[]    = {
+            { .mRootIndex = u32(triangle_root_parameter::vertex_buffer), .mType = gpu_descriptor_type::srv },
+            { .mRootIndex = u32(triangle_root_parameter::mesh_data),     .mType = gpu_descriptor_type::srv, .mFlags = gpu_descriptor_range_flags::none, .mShaderRegister = 1, .mRegisterSpace = 1 }
+        };
+
         gpu_root_constant   PerDrawConstants[] = { { .mRootIndex = u32(triangle_root_parameter::per_draw), .mNum32bitValues = sizeof(vertex_draw_constants) / 4 } };
+
         const char*         DebugName          = "Scene Pass Root Signature";
 
         gpu_root_signature_info Info = {};
@@ -284,7 +223,8 @@ void scene_pass::OnInit(gpu_frame_cache* FrameCache)
             .SetVertexShader(&VertexShader)
             .SetPixelShader(&PixelShader)
             .SetRenderTargetFormats(1, { gGlobal.mSwapchain.GetSwapchainFormat() })
-            .SetSampleQuality(SampleCount, SampleQuality);
+            .SetSampleQuality(SampleCount, SampleQuality)
+            .SetDepthStencilState(GetDepthStencilState(gpu_depth_stencil_state::read_write), DXGI_FORMAT_D32_FLOAT);
 
         mPso = Builder.Compile(FrameCache);
     }
@@ -302,15 +242,19 @@ void scene_pass::OnRender(gpu_frame_cache* FrameCache)
     mRenderTarget.Reset();
 
     gpu_texture* SceneFramebuffer = FrameCache->GetFramebuffer(gpu_framebuffer_binding::main_color);
+    gpu_texture* DepthBuffer      = FrameCache->GetFramebuffer(gpu_framebuffer_binding::depth_stencil);
+
     mRenderTarget.AttachTexture(attachment_point::color0, SceneFramebuffer);
+    mRenderTarget.AttachTexture(attachment_point::depth_stencil, DepthBuffer);
 
     gpu_command_list* CommandList = FrameCache->GetGraphicsCommandList();
 
     // Clear the Framebuffer and bind the render target.
     FrameCache->TransitionResource(SceneFramebuffer->GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+    FrameCache->TransitionResource(DepthBuffer->GetResource(), D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
     f32x4 ClearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-    CommandList->BindRenderTarget(&mRenderTarget, &ClearColor, false);
+    CommandList->BindRenderTarget(&mRenderTarget, &ClearColor, true);
 
     // Scissor / Viewport
     D3D12_VIEWPORT Viewport = mRenderTarget.GetViewport();
@@ -332,6 +276,7 @@ void scene_pass::OnRender(gpu_frame_cache* FrameCache)
 
     CommandList->SetIndexBuffer(gIndexResource.GetIndexBufferView());
     CommandList->SetShaderResourceViewInline(u32(triangle_root_parameter::vertex_buffer), gVertexResource.GetGPUResource());
+    CommandList->SetShaderResourceViewInline(u32(triangle_root_parameter::mesh_data), gPerObjectData.GetGPUResource(), gPerObjectData.GetMappedDataOffset());
 
     vertex_draw_constants Constants = {};
     CommandList->SetGraphics32BitConstants(u32(triangle_root_parameter::per_draw), &Constants);
@@ -367,7 +312,7 @@ void resolve_pass::OnRender(gpu_frame_cache* FrameCache)
     FrameCache->FlushResourceBarriers(CommandList);
 }
 
-gpu_texture CreateFramebufferImage(gpu_frame_cache* FrameCache)
+gpu_texture CreateFramebufferImage(gpu_frame_cache* FrameCache, bool IsDepth = false)
 {
     gpu_swapchain* Swapchain = &FrameCache->mGlobal->mSwapchain;
 
@@ -389,19 +334,33 @@ gpu_texture CreateFramebufferImage(gpu_frame_cache* FrameCache)
         SampleQuality = Samples.Quality;
     }
 
+    // If this is
+    FramebufferFormat = (IsDepth) ? DXGI_FORMAT_D32_FLOAT : FramebufferFormat;
+
     D3D12_RESOURCE_DESC ImageDesc = GetTex2DDesc(
         FramebufferFormat, FramebufferWidth, FramebufferHeight,
         1, 1, SampleCount, SampleQuality);
 
     // Allow UAV in case a Renderpass wants to read from the Image
-    ImageDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET|D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    if (IsDepth)
+        ImageDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+    else
+        ImageDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET|D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
     D3D12_CLEAR_VALUE ClearValue = {};
     ClearValue.Format   = ImageDesc.Format;
-    ClearValue.Color[0] = 0.0f;
-    ClearValue.Color[1] = 0.0f;
-    ClearValue.Color[2] = 0.0f;
-    ClearValue.Color[3] = 1.0f;
+
+    if (IsDepth)
+    {
+        ClearValue.DepthStencil = {1.0f, 0 };
+    }
+    else
+    {
+        ClearValue.Color[0] = 0.0f;
+        ClearValue.Color[1] = 0.0f;
+        ClearValue.Color[2] = 0.0f;
+        ClearValue.Color[3] = 1.0f;
+    }
 
     gpu_resource ImageResource = gpu_resource(*FrameCache->GetDevice(), ImageDesc, ClearValue);
     return gpu_texture(FrameCache, ImageResource);
@@ -460,10 +419,15 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
     ForRange(int, i, gpu_state::cMaxFrameCache)
     {
         gpu_frame_cache& Cache = gGlobal.mPerFrameCache[i];
+
+        // create the color framebuffers
         ForRange(int, FramebufferIndex, int(gpu_framebuffer_binding::max))
         {
-            Cache.mFramebuffers[FramebufferIndex] = CreateFramebufferImage(FrameCache);
+            Cache.mFramebuffers[FramebufferIndex] = CreateFramebufferImage(FrameCache, FramebufferIndex == int(gpu_framebuffer_binding::depth_stencil));
         }
+
+        // create the depth buffer
+
     }
 
 	//
@@ -471,26 +435,25 @@ SimpleRendererInit(simple_renderer_info& RenderInfo)
 	//
 
 	// Let's create a test resource
-	struct vertex { f32 Pos[2]; f32 Col[3]; };
-	vertex Vertices[] = {
-		{ .Pos = { -0.5f, -0.5f }, .Col = { 1.0f, 1.0f, 1.0f  } },
-		{ .Pos = {  0.5f, -0.5f }, .Col = { 0.36f,0.81f,0.98f } },
-		{ .Pos = {  0.0f,  0.5f }, .Col = { 0.96f,0.66f,0.72f } },
-	};
-
-	u16 Indices[] = { 0, 1, 2 };
+    test_cube TestCube = MakeCube(0.5f);
 
     gpu_byte_address_buffer_info VertexInfo = {};
-    VertexInfo.mCount                       = ArrayCount(Vertices);
-    VertexInfo.mStride                      = sizeof(vertex);
-    VertexInfo.mData                        = Vertices;
+    VertexInfo.mCount                       = ArrayCount(TestCube.Vertices);
+    VertexInfo.mStride                      = sizeof(TestCube.Vertices[0]);
+    VertexInfo.mData                        = TestCube.Vertices;
     gVertexResource = gpu_buffer::CreateByteAdressBuffer(FrameCache, VertexInfo);
 
     gpu_index_buffer_info IndexInfo = {};
-    IndexInfo.mIndexCount = 3;
-    IndexInfo.mIsU16 = true;
-    IndexInfo.mIndices = Indices;
+    IndexInfo.mIndexCount = ArrayCount(TestCube.Indices);
+    IndexInfo.mIsU16      = true;
+    IndexInfo.mIndices    = TestCube.Indices;
     gIndexResource = gpu_buffer::CreateIndexBuffer(FrameCache, IndexInfo);
+
+    gpu_structured_buffer_info PerObjectInfo = {};
+    PerObjectInfo.mCount  = 1; // only one object for now
+    PerObjectInfo.mStride = sizeof(per_mesh_data);
+    PerObjectInfo.mFrames = 3;
+    gPerObjectData = gpu_buffer::CreateStructuredBuffer(FrameCache, PerObjectInfo);
 
     FrameCache->SubmitCopyCommandList();
     FrameCache->FlushGPU(); // Forcibly upload all of the geometry (for now)
@@ -542,6 +505,37 @@ SimpleRendererRender()
 
     // End Frame Cache Cleanup
     //------------------------------------------------------------------------------------------------------------------
+    // Begin Data Setup
+
+    // Temporary setup
+    gPerObjectData.Map(gGlobal.mFrameCount);
+    per_mesh_data* MeshData = (per_mesh_data*)gPerObjectData.GetMappedData();
+
+    u32 WindowWidth, WindowHeight;
+    gGlobal.mSwapchain.GetDimensions(WindowWidth, WindowHeight);
+
+    f32x44 ProjectionMatrix = PerspectiveMatrixRH(45.0f, (f32)WindowWidth / (f32)WindowHeight, 0.01f, 100.0f);
+    f32x44 LookAtMatrix     = LookAtMatrixRH({0,0,5}, {0,0,-1}, {0,1,0});
+
+    MeshData[0].Projection = F32x44MulRH(ProjectionMatrix, LookAtMatrix);
+    MeshData[0].View       = {};
+
+    static f32 SpinnyTheta = 0.0f;
+    SpinnyTheta += 0.16;
+
+    f32x3 Axis = {1, 1, 0};
+
+    quaternion SpinnyQuat = {};
+    SpinnyQuat.XYZ = Axis;
+    SpinnyQuat.Theta = SpinnyTheta;
+
+    f32x44 SpinnyMatrix      = RotateMatrix(SpinnyTheta, {1,1,1});
+    f32x44 TranslationMatrix = TranslateMatrix({ 0, 0, -2});
+
+    MeshData[0].Transforms = F32x44MulRH(TranslationMatrix, SpinnyMatrix);
+
+    // End Data Setup
+    //------------------------------------------------------------------------------------------------------------------
     // Begin Rendering
 
     gScenePass.OnRender(FrameCache);    // Render the Triangle
@@ -552,6 +546,12 @@ SimpleRendererRender()
 	gGlobal.mSwapchain.Present();
 
 	gGlobal.mFrameCount += 1;
+
+    // End Rendering
+    //------------------------------------------------------------------------------------------------------------------
+    // Data Cleanup
+
+    gPerObjectData.Unmap();
 }
 
 void
@@ -563,6 +563,9 @@ SimpleRendererDeinit()
 
 		ResourceHandle = gIndexResource.GetGPUResource()->AsHandle();
 		ComSafeRelease(ResourceHandle);
+
+        ResourceHandle = gPerObjectData.GetGPUResource()->AsHandle();
+        ComSafeRelease(ResourceHandle);
 	}
 
 	gScenePass.OnDeinit(gGlobal.GetFrameCache());

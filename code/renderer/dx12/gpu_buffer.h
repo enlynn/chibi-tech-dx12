@@ -22,7 +22,7 @@ enum class gpu_buffer_type : u8
     unknown,
     vertex,       // TODO: Unsupported
     index,
-    structured,   // TODO: Unsupported
+    structured,
     byte_address,
 };
 
@@ -53,6 +53,15 @@ struct gpu_byte_address_buffer_info
     //gpu_resource*       mBufferHandle       = nullptr;
 };
 
+struct gpu_structured_buffer_info
+{
+    u64  mCount        = 0;     // Number of Elements in the buffer
+    u64  mStride       = 0;     // Per-Element Size
+    u8   mFrames       = 0;     // How many buffered frames this buffer will have. Buffer Size = mFrames * (mCount * mStride);
+    //bool mIsCpuVisible = false; // If True, can bind and write to the buffer on the CPU
+    // NOTE(enlynn): for now, let's assume CPU-visible.
+};
+
 class gpu_buffer
 {
 public:
@@ -64,7 +73,12 @@ public:
     //static gpu_buffer MakeStructuredBuffer();
     static gpu_buffer CreateByteAdressBuffer(struct gpu_frame_cache* FrameCache, gpu_byte_address_buffer_info& Info);
 
-    //void                     CreateViews();
+    static gpu_buffer CreateStructuredBuffer(gpu_frame_cache* FrameCache, gpu_structured_buffer_info& Info);
+
+    void Map(u64 Frame);
+    void Unmap();
+    void* GetMappedData()       const { return mFrameData;                      }
+    u64   GetMappedDataOffset() const { return mMappedFrame * mStride * mCount; }
 
     // Convenience functions for accessing the buffer views
     D3D12_INDEX_BUFFER_VIEW  GetIndexBufferView()       const { return _views.mIndexView;    }
@@ -95,7 +109,11 @@ private:
 
     bool            mCpuVisible   = false;
     bool            mIsBound      = false;
-    void*           mBoundData    = nullptr;
+
+    // Mapped data for a frame
+    u64             mMappedFrame   = 0;
+    void*           mMappedData    = nullptr;
+    void*           mFrameData     = nullptr;
     // TODO: Intermediary buffer for non-cpu visible buffers
 
     union

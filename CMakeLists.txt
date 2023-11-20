@@ -63,6 +63,8 @@ set(RENDERER
 		code/renderer/dx12/gpu_resource_state.h
 		code/renderer/dx12/gpu_resource_state.cpp
         code/renderer/dx12/gpu_render_pass.h
+        code/renderer/dx12/gpu_mesh_manager.h
+        code/renderer/dx12/gpu_mesh_manager.cpp
 )
 
 set(SYSTEMS

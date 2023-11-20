@@ -7,19 +7,31 @@ struct vertex_output
 
 struct simple_vertex
 {
-    float2 f2Position;
-    float3 f3Color;
+    float3 f3Position;
+    float3 f3Normal;
+    float2 f2Tex0;
 };
 
 struct vertex_draw_constants
 {
     uint uVertexOffset;
     uint uVertexBufferIndex;
+    uint uMeshDataIndex;
 };
 
-#define BufferSpace space0
+struct per_mesh_data
+{
+    float4x4 Projection; // Ideally this would go in a "global" constant  buffer. For now, this should be fine.
+    float4x4 View;
+    float4x4 Transform;      // Rotation-Scale-Translation Ops
+};
+
+#define BufferSpace  space0
+#define PerMeshSpace space1
 
 ByteAddressBuffer                     BufferTable[]        : register(t0, BufferSpace);
+StructuredBuffer<per_mesh_data>       PerMeshData          : register(t1, PerMeshSpace);
+
 ConstantBuffer<vertex_draw_constants> cVertexDrawConstants : register(b0, space0);
 
 simple_vertex ExtractVertex(uint uVertexId, vertex_draw_constants DrawConstants)
@@ -31,10 +43,16 @@ simple_vertex ExtractVertex(uint uVertexId, vertex_draw_constants DrawConstants)
 vertex_output main(uint uVertexId : SV_VertexID)
 {
     simple_vertex Vertex = ExtractVertex(uVertexId, cVertexDrawConstants);
+
+    per_mesh_data MeshData = PerMeshData[cVertexDrawConstants.uMeshDataIndex];
+
+    float4 Position = mul(MeshData.Transform, float4(Vertex.f3Position, 1.0f));
+    Position = mul(MeshData.View, Position);
+    Position = mul(MeshData.Projection, Position);
     
     vertex_output Result;
-    Result.f4Position = float4(Vertex.f2Position, 0.0f, 1.0f);
-    Result.f3Color    = Vertex.f3Color;
+    Result.f4Position = Position;
+    Result.f3Color    = float3(Vertex.f2Tex0, 0.0f);
     
     return Result;
 }
